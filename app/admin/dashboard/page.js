@@ -1,6 +1,63 @@
 'use client';
 import { useState, useEffect } from 'react';
 
+// --- KOMPONEN KECIL UNTUK TOMBOL DOWNLOAD (Supaya loadingnya per tombol) ---
+function TombolDownloadPDF({ token }) {
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleDownload = async () => {
+    try {
+      setIsLoading(true);
+
+      // 1. Request ke API
+      const response = await fetch(`/api/admin/pdf?token=${token}`);
+      if (!response.ok) throw new Error("Gagal generate PDF");
+
+      // 2. Ambil data Blob (Binary)
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+
+      // 3. Buat link download sementara
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `Berita_Acara_${token}.pdf`; // Nama file
+      document.body.appendChild(a);
+      a.click();
+
+      // 4. Bersihkan memori
+      a.remove();
+      window.URL.revokeObjectURL(url);
+
+    } catch (err) {
+      console.error(err);
+      alert("Gagal mendownload PDF. Coba lagi.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <button 
+      onClick={handleDownload}
+      disabled={isLoading}
+      className={`px-3 py-1 rounded shadow-sm flex items-center gap-1 text-xs font-bold transition-all ${
+        isLoading 
+          ? 'bg-gray-400 text-white cursor-not-allowed' 
+          : 'bg-red-600 hover:bg-red-700 text-white'
+      }`}
+    >
+      {isLoading ? (
+        <span>⏳ Proses...</span>
+      ) : (
+        <>
+          <span>📄</span> PDF
+        </>
+      )}
+    </button>
+  );
+}
+
+// --- KOMPONEN UTAMA DASHBOARD ---
 export default function AdminDashboard() {
   const [tokens, setTokens] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -62,10 +119,6 @@ export default function AdminDashboard() {
     alert("Link tersalin!");
   };
 
-  const downloadPDF = (token) => {
-    window.open(`/api/admin/pdf?token=${token}`, '_blank');
-  };
-
   // --- FUNGSI LOGOUT ---
   const handleLogout = async () => {
     await fetch('/api/auth/logout', { method: 'POST' });
@@ -78,7 +131,7 @@ export default function AdminDashboard() {
       className="min-h-screen bg-cover bg-center bg-no-repeat bg-fixed font-sans"
       style={{ 
         backgroundImage: "url('/bg-pengawasan.webp')",
-        boxShadow: "inset 0 0 0 1000px rgba(245, 245, 245, 0.85)" // Overlay Putih Transparan (Biar Teks Tetap Jelas)
+        boxShadow: "inset 0 0 0 1000px rgba(245, 245, 245, 0.85)" 
       }}
     >
       <nav className="bg-green-800 text-white p-4 shadow-lg sticky top-0 z-50">
@@ -204,12 +257,8 @@ export default function AdminDashboard() {
                         </button>
                         
                         {item.status === 'SUBMITTED' && (
-                          <button 
-                            onClick={() => downloadPDF(item.token)}
-                            className="text-white bg-red-600 hover:bg-red-700 px-3 py-1 rounded shadow-sm flex items-center gap-1 text-xs font-bold"
-                          >
-                            <span>📄</span> PDF
-                          </button>
+                          // DI SINI KITA PAKAI KOMPONEN YANG BARU
+                          <TombolDownloadPDF token={item.token} />
                         )}
                       </td>
                     </tr>
