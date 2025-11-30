@@ -3,7 +3,7 @@ import { PDFDocument } from 'pdf-lib';
 import dbConnect from '@/lib/db';
 import Laporan from '@/models/Laporan';
 
-// --- DATA MASTER CHECKLIST (Tetap Sama) ---
+// --- DATA MASTER CHECKLIST (SAMA SEPERTI SEBELUMNYA) ---
 const MASTER_CHECKLIST = [
   {
     kategori: "Dokumen Lingkungan",
@@ -161,11 +161,100 @@ export async function GET(request) {
       </style>
     </head>
     <body>
-
       <div class="top-right-label">1 Lampiran Berita Acara</div>
       <div class="doc-title">Lampiran Berita Acara Pengawasan Penaatan Lingkungan Hidup Daerah Kab. Sragen</div>
       <div class="doc-year">Tahun 2025</div>
+      
+      ${htmlContentBody(p, data, dataMap, sipaImgUrl, sipaIsPdf, MASTER_CHECKLIST, formatDriveImg)}
+      
+    </body>
+    </html>
+    `;
 
+    const footerTemplate = `
+      <div style="font-family: 'Times New Roman', serif; font-size: 8px; width: 100%; margin: 0 2cm; padding-bottom: 5px;">
+        <div style="border-top: 2px solid black; width: 100%; margin-bottom: 2px;"></div>
+        <div style="font-weight: bold; margin-bottom: 5px;">Mengetahui:</div>
+        <div style="display: flex; justify-content: space-between; width: 100%; font-weight: bold;">
+          <span>Petugas Perusahaan : (...........................................................................)</span>
+          <span>Tim Pengawas Penaatan LH : (...........................................................................)</span>
+        </div>
+      </div>
+    `;
+
+    // --- SETUP PUPPETEER HYBRID FINAL ---
+    let browser;
+    
+    if (process.env.NODE_ENV === 'production') {
+      // --- MODE VERCEL (Production) ---
+      const chromium = await import('@sparticuz/chromium-min').then(mod => mod.default);
+      const puppeteerCore = await import('puppeteer-core').then(mod => mod.default);
+
+      // KONFIGURASI PENTING UNTUK VERCEL:
+      // Kita arahkan ke URL remote agar tidak error "directory not found"
+      chromium.setGraphicsMode = false;
+      const executablePath = await chromium.executablePath(
+        "https://github.com/Sparticuz/chromium/releases/download/v123.0.1/chromium-v123.0.1-pack.tar"
+      );
+
+      browser = await puppeteerCore.launch({
+        args: chromium.args,
+        defaultViewport: chromium.defaultViewport,
+        executablePath: executablePath,
+        headless: chromium.headless,
+      });
+
+    } else {
+      // --- MODE LOCAL (Development) ---
+      const puppeteer = await import('puppeteer').then(mod => mod.default);
+      browser = await puppeteer.launch({
+        headless: 'new',
+        args: ['--no-sandbox']
+      });
+    }
+    
+    const page = await browser.newPage();
+    await page.setContent(htmlContent, { waitUntil: 'networkidle0' });
+
+    const reportPdfBuffer = await page.pdf({
+      format: 'A4',
+      printBackground: true,
+      displayHeaderFooter: true,
+      headerTemplate: '<div></div>',
+      footerTemplate: footerTemplate,
+      margin: { top: '1.5cm', right: '2cm', bottom: '3.5cm', left: '2cm' }
+    });
+
+    await browser.close();
+
+    // --- MERGE PDF LOGIC ---
+    let finalPdfBuffer = reportPdfBuffer;
+    if (sipaIsPdf && sipaBuffer) {
+      const reportPdfDoc = await PDFDocument.load(reportPdfBuffer);
+      const sipaPdfDoc = await PDFDocument.load(sipaBuffer);
+      const sipaPages = await reportPdfDoc.copyPages(sipaPdfDoc, sipaPdfDoc.getPageIndices());
+      sipaPages.forEach((page) => reportPdfDoc.addPage(page));
+      finalPdfBuffer = await reportPdfDoc.save(); 
+    }
+
+    const bufferToSend = Buffer.from(finalPdfBuffer);
+    return new NextResponse(bufferToSend, {
+      status: 200,
+      headers: {
+        'Content-Type': 'application/pdf',
+        'Content-Disposition': `attachment; filename="Berita_Acara_${data.token}.pdf"`,
+      },
+    });
+
+  } catch (error) {
+    console.error("PDF Error:", error);
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+}
+
+// --- HELPER FUNCTION UNTUK BODY HTML (Supaya rapi) ---
+function htmlContentBody(p, data, dataMap, sipaImgUrl, sipaIsPdf, MASTER_CHECKLIST, formatDriveImg) {
+    return `
       <div class="section-title">I. PROFIL JENIS USAHA DAN/ATAU KEGIATAN</div>
 
       <table class="main-table">
@@ -301,100 +390,5 @@ export async function GET(request) {
            return '';
         }).join('')}
       </div>
-
-    </body>
-    </html>
     `;
-
-    const footerTemplate = `
-      <div style="font-family: 'Times New Roman', serif; font-size: 8px; width: 100%; margin: 0 2cm; padding-bottom: 5px;">
-        <div style="border-top: 2px solid black; width: 100%; margin-bottom: 2px;"></div>
-        <div style="font-weight: bold; margin-bottom: 5px;">Mengetahui:</div>
-        <div style="display: flex; justify-content: space-between; width: 100%; font-weight: bold;">
-          <span>Petugas Perusahaan : (...........................................................................)</span>
-          <span>Tim Pengawas Penaatan LH : (...........................................................................)</span>
-        </div>
-      </div>
-    `;
-
-    // --- SETUP PUPPETEER HYBRID (LOCAL vs VERCEL) ---
-    // Kita gunakan Dynamic Import agar di Local tidak error mencari @sparticuz/chromium
-    // dan di Vercel tidak error mencari puppeteer standar.
-
-    let browser;
-    
-    if (process.env.NODE_ENV === 'production') {
-      // --- MODE VERCEL (Production) ---
-      // Gunakan library ringan
-      const chromium = await import('@sparticuz/chromium').then(mod => mod.default);
-      const puppeteerCore = await import('puppeteer-core').then(mod => mod.default);
-
-      browser = await puppeteerCore.launch({
-        args: chromium.args,
-        defaultViewport: chromium.defaultViewport,
-        executablePath: await chromium.executablePath(),
-        headless: chromium.headless,
-      });
-
-    } else {
-      // --- MODE LOCAL (Development) ---
-      // Gunakan library standar (otomatis download chrome)
-      const puppeteer = await import('puppeteer').then(mod => mod.default);
-      
-      browser = await puppeteer.launch({
-        headless: 'new',
-        args: ['--no-sandbox']
-      });
-    }
-    
-    const page = await browser.newPage();
-    await page.setContent(htmlContent, { waitUntil: 'networkidle0' });
-
-    const reportPdfBuffer = await page.pdf({
-      format: 'A4',
-      printBackground: true,
-      displayHeaderFooter: true,
-      headerTemplate: '<div></div>',
-      footerTemplate: footerTemplate,
-      margin: { top: '1.5cm', right: '2cm', bottom: '3.5cm', left: '2cm' }
-    });
-
-    await browser.close();
-
-    // --- VARIABLE FINAL PDF BUFFER (Inisialisasi) ---
-    // Default-nya adalah laporan utama saja
-    let finalPdfBuffer = reportPdfBuffer;
-
-    // --- JIKA ADA SIPA PDF -> MERGE PDF ---
-    if (sipaIsPdf && sipaBuffer) {
-      // Load Laporan Utama
-      const reportPdfDoc = await PDFDocument.load(reportPdfBuffer);
-      // Load SIPA PDF
-      const sipaPdfDoc = await PDFDocument.load(sipaBuffer);
-
-      // Copy semua halaman SIPA
-      const sipaPages = await reportPdfDoc.copyPages(sipaPdfDoc, sipaPdfDoc.getPageIndices());
-      
-      // Tempel ke Laporan Utama
-      sipaPages.forEach((page) => reportPdfDoc.addPage(page));
-      
-      // Update variabel final buffer
-      finalPdfBuffer = await reportPdfDoc.save(); 
-    }
-
-    // --- RETURN RESPONSE (FORCE DOWNLOAD) ---
-    const bufferToSend = Buffer.from(finalPdfBuffer);
-
-    return new NextResponse(bufferToSend, {
-      status: 200,
-      headers: {
-        'Content-Type': 'application/pdf',
-        'Content-Disposition': `attachment; filename="Berita_Acara_${data.token}.pdf"`,
-      },
-    });
-
-  } catch (error) {
-    console.error("PDF Error:", error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  }
 }
