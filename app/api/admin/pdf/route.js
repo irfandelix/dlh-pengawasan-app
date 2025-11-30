@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import puppeteer from 'puppeteer';
 import path from 'path';
-import { PDFDocument } from 'pdf-lib'; // Library untuk merge PDF
+import { PDFDocument } from 'pdf-lib';
 import dbConnect from '@/lib/db';
 import Laporan from '@/models/Laporan';
 
@@ -94,22 +94,18 @@ export async function GET(request) {
     if (p.file_sipa) {
       const driveUrl = formatDriveImg(p.file_sipa);
       try {
-        // Fetch file untuk cek header
         const res = await fetch(driveUrl);
         const arrayBuffer = await res.arrayBuffer();
         const buffer = Buffer.from(arrayBuffer);
 
-        // Cek Magic Number PDF (%PDF)
         if (buffer.toString('utf-8', 0, 4) === '%PDF') {
           sipaIsPdf = true;
-          sipaBuffer = buffer; // Simpan untuk di-merge nanti
+          sipaBuffer = buffer; 
         } else {
-          // Asumsi Gambar
           sipaImgUrl = driveUrl; 
         }
       } catch (e) {
         console.error("Gagal fetch SIPA:", e);
-        // Jika gagal fetch, anggap link biasa (fallback)
         sipaImgUrl = formatDriveImg(p.file_sipa);
       }
     }
@@ -130,89 +126,48 @@ export async function GET(request) {
     <head>
       <title>Berita Acara Pengawasan</title>
       <style>
-        /* MARGIN BAWAH 3.5CM (Untuk Footer Tanda Tangan) */
         @page { size: A4; margin: 1.5cm 2cm 3.5cm 2cm; }
-        
         body { font-family: 'Times New Roman', serif; font-size: 11pt; color: #000; line-height: 1.2; }
-        
-        /* HEADER */
         .top-right-label { font-size: 10pt; margin-bottom: 20px; text-align: right; }
         .doc-title { text-align: center; margin-bottom: 5px; font-size: 12pt; font-weight: bold; }
         .doc-year { text-align: center; margin-bottom: 20px; font-size: 12pt; font-weight: bold; }
-
-        /* SECTIONS */
         .section-title { font-weight: bold; margin-top: 10px; margin-bottom: 5px; text-transform: uppercase; }
-
-        /* TABLES */
         table { width: 100%; border-collapse: collapse; }
         td, th { vertical-align: top; padding: 3px; }
-        tr { page-break-inside: avoid; } /* Cegah potong baris */
-
-        /* PROFIL TABLE */
+        tr { page-break-inside: avoid; }
         .main-table { border: 1px solid #000; margin-bottom: 10px; width: 100%; font-size: 11pt; }
         .main-table td { border: 1px solid #000; }
         .col-label { width: 35%; }
         .col-sep { width: 2%; text-align: center; }
         .col-val { width: 63%; }
-
-        /* NESTED TABLE */
         .nested-table { width: 100%; border-collapse: collapse; margin: 0; }
         .nested-table td { border: 1px solid #000; text-align: center; font-size: 10pt; padding: 4px; }
         .nested-table tr:first-child td { border-top: none; }
         .nested-table tr:last-child td { border-bottom: none; }
         .nested-table td:first-child { border-left: none; }
         .nested-table td:last-child { border-right: none; }
-
-        /* CHECKLIST TABLE */
         .check-table { width: 100%; border: 1px solid #000; margin-top: 5px; font-size: 10pt; }
         .check-table th, .check-table td { border: 1px solid #000; padding: 4px; vertical-align: middle; }
         .check-table thead th { background-color: #ffffff; text-align: center; font-weight: bold; border-bottom: 2px solid #000; }
         .cat-row td { background-color: #f2f2f2; font-weight: bold; padding: 5px; border-top: 2px solid #000; border-bottom: 1px solid #000; }
         .check-center { text-align: center; font-size: 12pt; font-family: DejaVu Sans, sans-serif; }
-        
-        /* FOOTER TANDA TANGAN (FIXED BOTTOM) */
-        .footer-signature {
-            position: fixed; 
-            bottom: -2.5cm; 
-            left: 0; 
-            right: 0;
-            height: 2.5cm;
-            font-size: 7pt; 
-            font-weight: bold;
-            background-color: white; 
-            z-index: 1000;
-        }
+        .footer-signature { position: fixed; bottom: -2.5cm; left: 0; right: 0; height: 2.5cm; font-size: 7pt; font-weight: bold; background-color: white; z-index: 1000; }
         .sig-line { border-top: 2px solid #000; margin-bottom: 5px; width: 100%; }
         .sig-table { width: 100%; border: none; font-size: 7pt; font-weight: bold; }
         .sig-table td { border: none; vertical-align: top; padding: 2px 0; }
-        .sig-left { text-align: left; width: 50%; }
-        .sig-right { text-align: right; width: 50%; }
-
-        /* FOTO GRID */
         .photo-grid { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
         .photo-item { width: 48%; border: 1px solid #000; padding: 5px; text-align: center; page-break-inside: avoid; }
         .photo-item img { max-width: 100%; max-height: 200px; object-fit: contain; }
         .caption { font-size: 9pt; font-style: italic; margin-top: 5px; }
-        
-        /* PDF PLACEHOLDER BOX */
-        .pdf-placeholder {
-            width: 98%; 
-            border: 1px dashed #000; 
-            padding: 15px; 
-            text-align: center; 
-            background: #f9f9f9;
-            margin-bottom: 10px;
-        }
+        .pdf-placeholder { width: 98%; border: 1px dashed #000; padding: 15px; text-align: center; background: #f9f9f9; margin-bottom: 10px; }
       </style>
     </head>
     <body>
 
-      <!-- KONTEN -->
       <div class="top-right-label">1 Lampiran Berita Acara</div>
       <div class="doc-title">Lampiran Berita Acara Pengawasan Penaatan Lingkungan Hidup Daerah Kab. Sragen</div>
       <div class="doc-year">Tahun 2025</div>
 
-      <!-- I. PROFIL -->
       <div class="section-title">I. PROFIL JENIS USAHA DAN/ATAU KEGIATAN</div>
 
       <table class="main-table">
@@ -256,10 +211,8 @@ export async function GET(request) {
         <tr><td class="col-label">Prosentase Pemasaran Export</td><td class="col-sep">:</td><td class="col-val">${p.persen_export || p.pemasaran_export || ''}</td></tr>
       </table>
 
-      <!-- BREAK HALAMAN 1 -->
       <div style="page-break-before: always;"></div>
 
-      <!-- HALAMAN 2 -->
       <table class="main-table" style="margin-top: 20px;">
         <tr><td class="col-label">Prosentase Pemasaran Domestik</td><td class="col-sep">:</td><td class="col-val">${p.persen_domestik || p.pemasaran_domestik || ''}</td></tr>
         <tr><td class="col-label">Merek Dagang</td><td class="col-sep">:</td><td class="col-val">${p.merek_dagang || ''}</td></tr>
@@ -276,10 +229,8 @@ export async function GET(request) {
         <b>Realisasi RTH: ${p.ruang_terbuka_hijau_persen || p.rth_persen || '0'} %</b>
       </div>
 
-      <!-- BREAK HALAMAN 2 -->
       <div style="page-break-before: always;"></div>
 
-      <!-- II. CHECKLIST -->
       <div class="section-title">II. RINGKASAN TEMUAN LAPANGAN</div>
 
       <table class="check-table">
@@ -317,13 +268,10 @@ export async function GET(request) {
         </tbody>
       </table>
 
-      <!-- BREAK HALAMAN 3 -->
       <div style="page-break-before: always;"></div>
 
-      <!-- III. LAMPIRAN -->
       <div class="section-title">III. DOKUMENTASI LAMPIRAN</div>
       
-      <!-- JIKA SIPA ADALAH GAMBAR, TAMPIL DI SINI. JIKA PDF, TAMPILKAN PLACEHOLDER TEKS -->
       ${sipaImgUrl ? `
         <div style="margin-bottom: 20px;">
            <b>Dokumen SIPA:</b><br/>
@@ -360,7 +308,6 @@ export async function GET(request) {
     </html>
     `;
 
-    // --- FOOTER TEMPLATE (Puppeteer) ---
     const footerTemplate = `
       <div style="font-family: 'Times New Roman', serif; font-size: 8px; width: 100%; margin: 0 2cm; padding-bottom: 5px;">
         <div style="border-top: 2px solid black; width: 100%; margin-bottom: 2px;"></div>
@@ -372,15 +319,13 @@ export async function GET(request) {
       </div>
     `;
 
-    // --- 1. GENERATE PDF LAPORAN UTAMA (HTML) ---
-// --- SETUP PUPPETEER ---
-    // Kita gunakan setting standar yang kompatibel dengan hosting modern
+    // --- SETUP PUPPETEER ---
     const browser = await puppeteer.launch({
       headless: 'new',
       args: [
         '--no-sandbox',
         '--disable-setuid-sandbox',
-        '--disable-dev-shm-usage' // Tambahan agar memori lebih hemat
+        '--disable-dev-shm-usage'
       ]
     });
     
@@ -398,7 +343,11 @@ export async function GET(request) {
 
     await browser.close();
 
-    // --- 2. JIKA ADA SIPA PDF -> MERGE PDF ---
+    // --- VARIABLE FINAL PDF BUFFER (Inisialisasi) ---
+    // Default-nya adalah laporan utama saja
+    let finalPdfBuffer = reportPdfBuffer;
+
+    // --- JIKA ADA SIPA PDF -> MERGE PDF ---
     if (sipaIsPdf && sipaBuffer) {
       // Load Laporan Utama
       const reportPdfDoc = await PDFDocument.load(reportPdfBuffer);
@@ -410,21 +359,11 @@ export async function GET(request) {
       
       // Tempel ke Laporan Utama
       sipaPages.forEach((page) => reportPdfDoc.addPage(page));
-      finalPdfBuffer = await reportPdfDoc.save(); // Uint8Array
-    }
-
-      // Simpan hasil gabungan
-      const mergedPdfBytes = await reportPdfDoc.save();
       
-      return new NextResponse(mergedPdfBytes, {
-        headers: {
-          'Content-Type': 'application/pdf',
-          'Content-Disposition': `attachment; filename="Berita_Acara_${data.token}_Full.pdf"`,
-        },
-      });
+      // Update variabel final buffer
+      finalPdfBuffer = await reportPdfDoc.save(); 
     }
 
-    // --- 3. JIKA TIDAK ADA PDF TAMBAHAN, KIRIM LAPORAN SAJA ---
     // --- RETURN RESPONSE (FORCE DOWNLOAD) ---
     // Ubah Uint8Array ke Buffer agar Next.js bisa mengirimnya dengan benar
     const bufferToSend = Buffer.from(finalPdfBuffer);
@@ -433,7 +372,6 @@ export async function GET(request) {
       status: 200,
       headers: {
         'Content-Type': 'application/pdf',
-        // 'attachment' = Paksa Download. 'inline' = Preview di browser.
         'Content-Disposition': `attachment; filename="Berita_Acara_${data.token}.pdf"`,
       },
     });
