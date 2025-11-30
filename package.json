@@ -10,11 +10,12 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@sparticuz/chromium": "^141.0.0",
     "googleapis": "^166.0.0",
     "mongoose": "^9.0.0",
     "next": "16.0.5",
     "pdf-lib": "^1.17.1",
-    "puppeteer": "^24.31.0",
+    "puppeteer-core": "^24.31.0",
     "react": "19.2.0",
     "react-dom": "19.2.0"
   },
@@ -22,6 +23,7 @@
     "@tailwindcss/postcss": "^4",
     "eslint": "^9",
     "eslint-config-next": "16.0.5",
+    "puppeteer": "^24.31.0",
     "tailwindcss": "^4"
   }
 }

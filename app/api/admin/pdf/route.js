@@ -1,10 +1,9 @@
 import { NextResponse } from 'next/server';
-import puppeteer from 'puppeteer'; // Pakai yang standar
 import { PDFDocument } from 'pdf-lib';
 import dbConnect from '@/lib/db';
 import Laporan from '@/models/Laporan';
 
-// --- DATA MASTER CHECKLIST ---
+// --- DATA MASTER CHECKLIST (Tetap Sama) ---
 const MASTER_CHECKLIST = [
   {
     kategori: "Dokumen Lingkungan",
@@ -318,17 +317,35 @@ export async function GET(request) {
       </div>
     `;
 
-    // --- SETUP PUPPETEER OTOMATIS (SIMPLE) ---
-    // Tidak perlu path file manual lagi. Puppeteer akan mencari sendiri.
-    const browser = await puppeteer.launch({
-      headless: 'new', // Mode tanpa tampilan window
-      args: [
-        '--no-sandbox',
-        '--disable-setuid-sandbox',
-        '--disable-dev-shm-usage', // Menghemat memori
-        '--disable-gpu'
-      ]
-    });
+    // --- SETUP PUPPETEER HYBRID (LOCAL vs VERCEL) ---
+    // Kita gunakan Dynamic Import agar di Local tidak error mencari @sparticuz/chromium
+    // dan di Vercel tidak error mencari puppeteer standar.
+
+    let browser;
+    
+    if (process.env.NODE_ENV === 'production') {
+      // --- MODE VERCEL (Production) ---
+      // Gunakan library ringan
+      const chromium = await import('@sparticuz/chromium').then(mod => mod.default);
+      const puppeteerCore = await import('puppeteer-core').then(mod => mod.default);
+
+      browser = await puppeteerCore.launch({
+        args: chromium.args,
+        defaultViewport: chromium.defaultViewport,
+        executablePath: await chromium.executablePath(),
+        headless: chromium.headless,
+      });
+
+    } else {
+      // --- MODE LOCAL (Development) ---
+      // Gunakan library standar (otomatis download chrome)
+      const puppeteer = await import('puppeteer').then(mod => mod.default);
+      
+      browser = await puppeteer.launch({
+        headless: 'new',
+        args: ['--no-sandbox']
+      });
+    }
     
     const page = await browser.newPage();
     await page.setContent(htmlContent, { waitUntil: 'networkidle0' });
