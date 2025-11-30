@@ -137,7 +137,7 @@ export default function AdminDashboard() {
       <nav className="bg-green-800 text-white p-4 shadow-lg sticky top-0 z-50">
         <div className="max-w-6xl mx-auto flex justify-between items-center">
           <div className="flex items-center gap-2">
-            <h1 className="text-lg font-bold tracking-wide">Admin Pengawasan LH (Online)</h1>
+            <h1 className="text-lg font-bold tracking-wide">Dashboard Admin LH</h1>
           </div>
           
           <button 
