@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
-import puppeteer from 'puppeteer-core';
-import chromium from '@sparticuz/chromium';
+import puppeteer from 'puppeteer'; // Pakai yang standar
 import { PDFDocument } from 'pdf-lib';
 import dbConnect from '@/lib/db';
 import Laporan from '@/models/Laporan';
@@ -319,32 +318,17 @@ export async function GET(request) {
       </div>
     `;
 
-    // --- SETUP PUPPETEER (BARU & STABIL) ---
-    // Logika: 
-    // - Jika Development (Localhost) -> Pakai Chrome yang ada di Laptop (Path Windows)
-    // - Jika Production (Server/Hosting) -> Pakai @sparticuz/chromium
-    
-    let browser;
-    
-    if (process.env.NODE_ENV === 'development') {
-        // --- MODE LOKAL (Development) ---
-        // Jika kamu pakai Mac/Linux, ubah 'executablePath' di bawah ini ke lokasi Chrome kamu
-        browser = await puppeteer.launch({
-            args: ['--no-sandbox'],
-            // Ganti path ini jika Chrome kamu ada di tempat lain
-            executablePath: "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe", 
-            headless: true
-        });
-    } else {
-        // --- MODE SERVER (Production) ---
-        // Otomatis pakai chromium ringan dari @sparticuz
-        browser = await puppeteer.launch({
-            args: chromium.args,
-            defaultViewport: chromium.defaultViewport,
-            executablePath: await chromium.executablePath(),
-            headless: chromium.headless,
-        });
-    }
+    // --- SETUP PUPPETEER OTOMATIS (SIMPLE) ---
+    // Tidak perlu path file manual lagi. Puppeteer akan mencari sendiri.
+    const browser = await puppeteer.launch({
+      headless: 'new', // Mode tanpa tampilan window
+      args: [
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage', // Menghemat memori
+        '--disable-gpu'
+      ]
+    });
     
     const page = await browser.newPage();
     await page.setContent(htmlContent, { waitUntil: 'networkidle0' });
@@ -382,7 +366,6 @@ export async function GET(request) {
     }
 
     // --- RETURN RESPONSE (FORCE DOWNLOAD) ---
-    // Ubah Uint8Array ke Buffer agar Next.js bisa mengirimnya dengan benar
     const bufferToSend = Buffer.from(finalPdfBuffer);
 
     return new NextResponse(bufferToSend, {
