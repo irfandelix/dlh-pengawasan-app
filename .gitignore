@@ -43,4 +43,10 @@ next-env.d.ts
 .env.local
 .env
 client ID.txt
-.cache/puppeteer
+
+# Memaksa Puppeteer menyimpan dan mencari Chrome di dalam folder project saat ini
+PUPPETEER_CACHE_DIR="./.cache/puppeteer"
+
+.cache
+.cache/
+node_modules

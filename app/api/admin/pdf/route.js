@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import puppeteer from 'puppeteer';
+import path from 'path';
 import { PDFDocument } from 'pdf-lib'; // Library untuk merge PDF
 import dbConnect from '@/lib/db';
 import Laporan from '@/models/Laporan';
@@ -372,9 +373,15 @@ export async function GET(request) {
     `;
 
     // --- 1. GENERATE PDF LAPORAN UTAMA (HTML) ---
+// --- SETUP PUPPETEER ---
+    // Kita gunakan setting standar yang kompatibel dengan hosting modern
     const browser = await puppeteer.launch({
       headless: 'new',
-      args: ['--no-sandbox', '--disable-setuid-sandbox'] 
+      args: [
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage' // Tambahan agar memori lebih hemat
+      ]
     });
     
     const page = await browser.newPage();
@@ -402,9 +409,9 @@ export async function GET(request) {
       const sipaPages = await reportPdfDoc.copyPages(sipaPdfDoc, sipaPdfDoc.getPageIndices());
       
       // Tempel ke Laporan Utama
-      sipaPages.forEach((page) => {
-        reportPdfDoc.addPage(page);
-      });
+      sipaPages.forEach((page) => reportPdfDoc.addPage(page));
+      finalPdfBuffer = await reportPdfDoc.save(); // Uint8Array
+    }
 
       // Simpan hasil gabungan
       const mergedPdfBytes = await reportPdfDoc.save();
@@ -418,9 +425,15 @@ export async function GET(request) {
     }
 
     // --- 3. JIKA TIDAK ADA PDF TAMBAHAN, KIRIM LAPORAN SAJA ---
-    return new NextResponse(reportPdfBuffer, {
+    // --- RETURN RESPONSE (FORCE DOWNLOAD) ---
+    // Ubah Uint8Array ke Buffer agar Next.js bisa mengirimnya dengan benar
+    const bufferToSend = Buffer.from(finalPdfBuffer);
+
+    return new NextResponse(bufferToSend, {
+      status: 200,
       headers: {
         'Content-Type': 'application/pdf',
+        // 'attachment' = Paksa Download. 'inline' = Preview di browser.
         'Content-Disposition': `attachment; filename="Berita_Acara_${data.token}.pdf"`,
       },
     });
