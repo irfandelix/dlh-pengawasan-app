@@ -1,8 +1,10 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   experimental: {
-    serverComponentsExternalPackages: ['puppeteer-core', '@sparticuz/chromium'],
+    // Mengizinkan puppeteer dijalankan di server components
+    serverComponentsExternalPackages: ['puppeteer'],
   },
 };
 
-module.exports = nextConfig; // atau export default nextConfig jika pakai .mjs
+// GUNAKAN INI (export default) BUKAN module.exports
+export default nextConfig;

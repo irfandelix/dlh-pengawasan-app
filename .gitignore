@@ -49,4 +49,5 @@ PUPPETEER_CACHE_DIR="./.cache/puppeteer"
 
 .cache
 .cache/
+.local-chromium
 node_modules
