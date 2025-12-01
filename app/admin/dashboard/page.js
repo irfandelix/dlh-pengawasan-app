@@ -1,37 +1,27 @@
 'use client';
 import { useState, useEffect } from 'react';
 
-// --- [BARU] DITAMBAHKAN DISINI ---
-// Konstanta ini ditaruh di luar supaya tidak dibuat ulang setiap kali layar refresh
+// --- KONSTANTA JUMLAH TOTAL PERTANYAAN ---
 const TOTAL_SOAL = 45;
 
-// --- KOMPONEN KECIL UNTUK TOMBOL DOWNLOAD (Supaya loadingnya per tombol) ---
+// --- KOMPONEN KECIL UNTUK TOMBOL DOWNLOAD ---
 function TombolDownloadPDF({ token }) {
   const [isLoading, setIsLoading] = useState(false);
 
   const handleDownload = async () => {
     try {
       setIsLoading(true);
-
-      // 1. Request ke API
       const response = await fetch(`/api/admin/pdf?token=${token}`);
       if (!response.ok) throw new Error("Gagal generate PDF");
-
-      // 2. Ambil data Blob (Binary)
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
-
-      // 3. Buat link download sementara
       const a = document.createElement('a');
       a.href = url;
-      a.download = `Berita_Acara_${token}.pdf`; // Nama file
+      a.download = `Berita_Acara_${token}.pdf`;
       document.body.appendChild(a);
       a.click();
-
-      // 4. Bersihkan memori
       a.remove();
       window.URL.revokeObjectURL(url);
-
     } catch (err) {
       console.error(err);
       alert("Gagal mendownload PDF. Coba lagi.");
@@ -50,13 +40,7 @@ function TombolDownloadPDF({ token }) {
           : 'bg-red-600 hover:bg-red-700 text-white'
       }`}
     >
-      {isLoading ? (
-        <span>⏳ Proses...</span>
-      ) : (
-        <>
-          <span>📄</span> PDF
-        </>
-      )}
+      {isLoading ? <span>⏳...</span> : <><span>📄</span> PDF</>}
     </button>
   );
 }
@@ -68,7 +52,7 @@ export default function AdminDashboard() {
   
   // State Form
   const [namaUsaha, setNamaUsaha] = useState('');
-  const [tipeTarget, setTipeTarget] = useState('INDUSTRI'); // Default
+  const [tipeTarget, setTipeTarget] = useState('INDUSTRI'); 
 
   // 1. SAAT HALAMAN DIBUKA: Ambil data dari MongoDB
   useEffect(() => {
@@ -97,7 +81,7 @@ export default function AdminDashboard() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
-          nama_usaha: namaUsaha,
+          nama_usaha: namaUsaha, 
           kategori_target: tipeTarget 
         })
       });
@@ -123,15 +107,12 @@ export default function AdminDashboard() {
     alert("Link tersalin!");
   };
 
-  // --- FUNGSI LOGOUT ---
   const handleLogout = async () => {
     await fetch('/api/auth/logout', { method: 'POST' });
     window.location.href = '/'; 
   };
 
-  // --- [BARU] MASUKAN KODE INI SEBELUM "return" ---
-  
-  // 1. Fungsi Matematika (Menghitung Persen)
+  // --- FUNGSI HITUNG NILAI ---
   const hitungNilai = (checklistArray) => {
     if (!checklistArray || checklistArray.length === 0) return 0;
     const jumlahAda = checklistArray.filter(item => item.is_ada === true).length;
@@ -139,11 +120,11 @@ export default function AdminDashboard() {
     // Rumus: (Jumlah Jawaban "Ada" dibagi 45 Soal) dikali 100
     const nilai = Math.round((jumlahAda / TOTAL_SOAL) * 100);
     
-    // Penjagaan biar nilainya gak lebih dari 100 (misal ada error data)
+    // Penjagaan biar nilainya gak lebih dari 100
     return nilai > 100 ? 100 : nilai;
   };
 
-  // 2. Fungsi Logika Warna (Sesuai Gambar Kriteria)
+  // --- FUNGSI LOGIKA WARNA & LABEL ---
   const getStatusNilai = (nilai) => {
     if (nilai >= 90) return { label: "SANGAT BAIK", style: "bg-green-100 text-green-700 border-green-200" };
     if (nilai >= 70) return { label: "BAIK", style: "bg-cyan-100 text-cyan-700 border-cyan-200" };
@@ -152,10 +133,7 @@ export default function AdminDashboard() {
     return { label: "SANGAT KURANG", style: "bg-gray-800 text-white border-gray-600" };
   };
 
-  // --- [AKHIR KODE BARU] ---
-
   return (
-    // --- BACKGROUND IMAGE ---
     <div 
       className="min-h-screen bg-cover bg-center bg-no-repeat bg-fixed font-sans"
       style={{ 
@@ -180,7 +158,7 @@ export default function AdminDashboard() {
 
       <div className="max-w-6xl mx-auto p-6 grid grid-cols-1 md:grid-cols-3 gap-8">
         
-        {/* FORM GENERATOR (Efek Kaca) */}
+        {/* FORM GENERATOR */}
         <div className="md:col-span-1">
           <div className="bg-white/90 backdrop-blur-sm p-6 rounded-xl shadow-lg border border-white/50 sticky top-24">
             <h2 className="text-lg font-bold mb-1 text-gray-800">Buat Pengawasan</h2>
@@ -236,7 +214,7 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        {/* TABEL MONITORING (Efek Kaca) */}
+        {/* TABEL MONITORING */}
         <div className="md:col-span-2">
           <div className="bg-white/90 backdrop-blur-sm rounded-xl shadow-lg border border-white/50 overflow-hidden min-h-[500px]">
             <div className="p-5 border-b border-gray-100 bg-white/50 flex justify-between items-center">
@@ -258,54 +236,62 @@ export default function AdminDashboard() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
+                  {/* ▼▼▼ PERBAIKAN DI SINI: Menggunakan { ... return (...) } ▼▼▼ */}
                   {tokens.map((item) => {
-
-                    // --- [BARU] Panggil fungsi yang kita buat di Bagian 2 tadi ---
                     const nilai = hitungNilai(item.checklist);
                     const statusNilai = getStatusNilai(nilai);
 
-                    <tr key={item._id} className="hover:bg-white/80 transition-colors">
-                      <td className="px-6 py-4">
-                        <span className="font-mono font-bold text-green-700 bg-green-50 px-2 py-1 rounded border border-green-100">
-                          {item.token}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="font-bold text-gray-800">{item.profil?.nama_usaha || '-'}</div>
-                        <div className="text-xs text-gray-400 mt-0.5">
-                          {item.kategori_target === 'FASYANKES' ? '🏥 Fasyankes' : '🏭 Industri'}
-                        </div>
-                      </td>
-                      {/* --- [BARU] KOLOM NILAI --- */}
-                      <td className="px-6 py-4 text-center">
-                        {item.status === 'SUBMITTED' ? (
-                          // Tampilkan Kotak Nilai jika sudah Submit
-                          <div className={`inline-flex flex-col items-center justify-center px-3 py-1.5 rounded border shadow-sm ${statusNilai.style}`}>
-                            <span className="text-lg font-black leading-none">{nilai}</span>
-                            <span className="text-[9px] font-bold uppercase mt-0.5">{statusNilai.label}</span>
+                    return (
+                      <tr key={item._id} className="hover:bg-white/80 transition-colors">
+                        <td className="px-6 py-4">
+                          <span className="font-mono font-bold text-green-700 bg-green-50 px-2 py-1 rounded border border-green-100">
+                            {item.token}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="font-bold text-gray-800">{item.profil?.nama_usaha || '-'}</div>
+                          <div className="text-xs text-gray-400 mt-0.5">
+                            {item.kategori_target === 'FASYANKES' ? '🏥 Fasyankes' : '🏭 Industri'}
                           </div>
-                        ) : (
-                          // Tampilkan strip (-) jika masih Draft
-                          <span className="text-gray-300 text-xl font-bold">-</span>
-                        )}
-                      </td>
-                      <td className="px-6 py-4 text-right flex justify-end gap-2">
-                        <button 
-                          onClick={() => copyLink(item.token)}
-                          className="text-blue-600 hover:text-blue-800 border border-blue-200 px-2 py-1 rounded bg-blue-50 text-xs"
-                        >
-                          Copy Link
-                        </button>
+                        </td>
+                        <td className="px-6 py-4">
+                          <span className={`px-2 py-1 rounded-full text-xs font-bold ${
+                            item.status === 'SUBMITTED' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                          }`}>
+                            {item.status}
+                          </span>
+                        </td>
                         
-                        {item.status === 'SUBMITTED' && (
-                          // DI SINI KITA PAKAI KOMPONEN YANG BARU
-                          <TombolDownloadPDF token={item.token} />
-                        )}
-                      </td>
-                    </tr>
+                        {/* KOLOM KINERJA */}
+                        <td className="px-6 py-4 text-center">
+                          {item.status === 'SUBMITTED' ? (
+                            <div className={`inline-flex flex-col items-center justify-center px-3 py-1.5 rounded border shadow-sm ${statusNilai.style}`}>
+                              <span className="text-lg font-black leading-none">{nilai}</span>
+                              <span className="text-[9px] font-bold uppercase mt-0.5">{statusNilai.label}</span>
+                            </div>
+                          ) : (
+                            <span className="text-gray-300 text-xl font-bold">-</span>
+                          )}
+                        </td>
+
+                        <td className="px-6 py-4 text-right flex justify-end gap-2">
+                          <button 
+                            onClick={() => copyLink(item.token)}
+                            className="text-blue-600 hover:text-blue-800 border border-blue-200 px-2 py-1 rounded bg-blue-50 text-xs"
+                          >
+                            Copy Link
+                          </button>
+                          
+                          {item.status === 'SUBMITTED' && (
+                            <TombolDownloadPDF token={item.token} />
+                          )}
+                        </td>
+                      </tr>
+                    );
                   })}
+                  
                   {tokens.length === 0 && (
-                     <tr><td colSpan="4" className="text-center p-8 text-gray-400">Database masih kosong...</td></tr>
+                     <tr><td colSpan="5" className="text-center p-8 text-gray-400">Database masih kosong...</td></tr>
                   )}
                 </tbody>
               </table>

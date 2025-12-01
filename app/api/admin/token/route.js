@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import dbConnect from '@/lib/db';
 import Laporan from '@/models/Laporan';
 
-// 🔥 WAJIB ADA: MENCEGAH NEXT.JS MENYIMPAN CACHE DATA LAMA
+// 🔥 WAJIB DITAMBAHKAN: Mencegah Next.js menyimpan cache data lama
 export const dynamic = 'force-dynamic';
 
 // 1. GET: UNTUK MENGAMBIL DATA DARI MONGODB KE DASHBOARD
@@ -10,9 +10,12 @@ export async function GET() {
   try {
     await dbConnect();
     
-    // Pastikan nama field sort sesuai dengan yang di database ('created_at' atau 'createdAt')
-    // Sesuai gambar DB kamu sebelumnya, pakai 'created_at'
+    // Pastikan field sort sesuai dengan Schema kamu ('created_at' atau 'createdAt')
+    // Berdasarkan screenshot DB kamu sebelumnya, sepertinya pakai 'created_at'
     const data = await Laporan.find({}).sort({ created_at: -1 });
+
+    // Tambahkan log ini untuk melihat di terminal apakah data berhasil diambil
+    console.log("GET Token Request. Jumlah Data:", data.length);
 
     return NextResponse.json({ 
       success: true, 
