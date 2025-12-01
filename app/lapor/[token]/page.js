@@ -323,6 +323,14 @@ export default function FormLaporanPage() {
             profil: { ...prev.profil, file_sipa: json.file_url }
           }));
           alert("Berkas SIPA Berhasil Diupload!");
+        // --- [BARU] LOGIC UNTUK UPLOAD DIAGRAM ALIR ---
+        } else if (context === 'DIAGRAM') {
+          setFormData(prev => ({
+            ...prev,
+            profil: { ...prev.profil, file_diagram: json.file_url }
+          }));
+          alert("Diagram Alir Berhasil Diupload!");
+        // ----------------------------------------------
         } else if (context === 'CHECKLIST') {
           handleChecklistChange(extraParam.kategori, extraParam.pertanyaan, 'bukti_foto', [json.file_url]);
           alert("Bukti Foto Berhasil Diupload!");
@@ -600,21 +608,54 @@ export default function FormLaporanPage() {
               {/* D. ENERGI & LINGKUNGAN */}
               <div>
                 <h3 className="text-lg font-bold text-green-800 border-b-2 border-green-100 pb-2 mb-4">D. Energi & Manajemen Lingkungan</h3>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  <div>
-                    <label className="label-text">Bahan Bakar Digunakan</label>
-                    <input type="text" name="bahan_bakar" value={formData.profil.bahan_bakar || ''} onChange={handleProfilChange} className="input-field" placeholder="Solar / Gas / Batubara" />
+                
+                {/* --- LOGIKA 1: JIKA INDUSTRI (TAMPILKAN BAHAN BAKAR) --- */}
+                {!isFasyankes && (
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div>
+                      <label className="label-text">Bahan Bakar Digunakan</label>
+                      <input type="text" name="bahan_bakar" value={formData.profil.bahan_bakar || ''} onChange={handleProfilChange} className="input-field" placeholder="Solar / Gas / Batubara" />
+                    </div>
+                    <div>
+                      <label className="label-text">Satuan</label>
+                      <input type="text" name="satuan_bahan_bakar" value={formData.profil.satuan_bahan_bakar || ''} onChange={handleProfilChange} className="input-field" placeholder="Liter / Ton" />
+                    </div>
+                    <div>
+                      <label className="label-text">Konsumsi / Tahun</label>
+                      <input type="number" name="konsumsi_bb" value={formData.profil.konsumsi_bb || ''} onChange={handleProfilChange} className="input-field" />
+                    </div>
                   </div>
-                  <div>
-                    <label className="label-text">Satuan</label>
-                    <input type="text" name="satuan_bahan_bakar" value={formData.profil.satuan_bahan_bakar || ''} onChange={handleProfilChange} className="input-field" placeholder="Liter / Ton" />
-                  </div>
-                  <div>
-                    <label className="label-text">Konsumsi / Tahun</label>
-                    <input type="number" name="konsumsi_bb" value={formData.profil.konsumsi_bb || ''} onChange={handleProfilChange} className="input-field" />
-                  </div>
-                </div>
+                )}
 
+                {/* --- LOGIKA 2: JIKA FASYANKES (TAMPILKAN DIAGRAM & MEDIA PEMBUANGAN) --- */}
+                {isFasyankes && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Upload Diagram Alir */}
+                    <div className="md:col-span-2 bg-yellow-50 p-4 rounded-md border border-yellow-100">
+                      <label className="label-text text-yellow-800">Diagram Alir Proses (Lampirkan Berkas)</label>
+                      <div className="flex flex-col mt-2">
+                        <label className="cursor-pointer bg-white border border-yellow-300 text-yellow-700 px-4 py-2 rounded hover:bg-yellow-100 text-sm font-medium text-center shadow-sm transition-all hover:shadow-md">
+                           <span>{formData.profil.file_diagram ? "✅ Berkas Terupload (Ganti?)" : "📂 Upload Diagram Alir (PDF/Image)"}</span>
+                           <input 
+                             type="file" 
+                             accept="application/pdf,image/*"
+                             className="hidden"
+                             onChange={(e) => handleFileUpload(e, 'DIAGRAM')} 
+                           />
+                        </label>
+                        <p className="text-xs text-gray-400 mt-1 text-center">Maksimal 5MB</p>
+                      </div>
+                    </div>
+
+                    {/* Media Pembuangan Air Limbah */}
+                    <div className="md:col-span-2">
+                      <label className="label-text">Media Tempat Pembuangan Air Limbah</label>
+                      <input type="text" name="media_pembuangan_air" value={formData.profil.media_pembuangan_air || ''} onChange={handleProfilChange} className="input-field" placeholder="Contoh: Sungai Bengawan Solo / IPAL Komunal" />
+                    </div>
+                  </div>
+                )}
+
+                {/* --- BAGIAN UMUM (TAMPIL DI KEDUANYA) --- */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
                   <div>
                     <label className="label-text">Sistem Manajemen Lingkungan</label>
