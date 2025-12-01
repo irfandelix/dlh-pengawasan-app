@@ -1,8 +1,9 @@
 'use client';
 import { useState, useEffect } from 'react';
 
-// --- KONSTANTA JUMLAH TOTAL PERTANYAAN ---
-const TOTAL_SOAL = 45; 
+// --- [1] KONFIGURASI JUMLAH SOAL (DINAMIS) ---
+const TOTAL_SOAL_INDUSTRI = 45;   
+const TOTAL_SOAL_FASYANKES = 39;  // Lebih sedikit karena tidak ada Emisi Udara
 
 // --- KOMPONEN KECIL UNTUK TOMBOL DOWNLOAD ---
 function TombolDownloadPDF({ token }) {
@@ -49,12 +50,10 @@ function TombolDownloadPDF({ token }) {
 export default function AdminDashboard() {
   const [tokens, setTokens] = useState([]);
   const [loading, setLoading] = useState(false);
-  
-  // State Form
   const [namaUsaha, setNamaUsaha] = useState('');
   const [tipeTarget, setTipeTarget] = useState('INDUSTRI'); 
 
-  // 1. SAAT HALAMAN DIBUKA: Ambil data dari MongoDB
+  // Ambil Data
   useEffect(() => {
     fetchTokens();
   }, []);
@@ -71,11 +70,10 @@ export default function AdminDashboard() {
     }
   };
 
-  // 2. SAAT TOMBOL GENERATE DITEKAN
+  // Generate Token
   const handleGenerate = async (e) => {
     e.preventDefault();
     setLoading(true);
-
     try {
       const res = await fetch('/api/admin/token', {
         method: 'POST',
@@ -85,7 +83,6 @@ export default function AdminDashboard() {
           kategori_target: tipeTarget 
         })
       });
-      
       const json = await res.json();
       if (json.success) {
         setNamaUsaha(''); 
@@ -95,7 +92,7 @@ export default function AdminDashboard() {
         alert("Gagal: " + json.error);
       }
     } catch (err) {
-      alert("Error jaringan / Database belum siap.");
+      alert("Error jaringan.");
     } finally {
       setLoading(false);
     }
@@ -112,29 +109,33 @@ export default function AdminDashboard() {
     window.location.href = '/'; 
   };
 
-  // --- 3. FUNGSI HITUNG NILAI (LOGIKA BARU: BUKTI FOTO) ---
-  const hitungNilai = (checklistArray) => {
+  // --- [2] FUNGSI HITUNG NILAI DINAMIS ---
+  // Menerima parameter 'kategori' untuk menentukan pembagi
+  const hitungNilai = (checklistArray, kategori) => {
     if (!checklistArray || checklistArray.length === 0) return 0;
     
-    let totalPoin = 0;
+    // Tentukan Pembagi berdasarkan Kategori Target
+    const PEMBAGI = kategori === 'FASYANKES' ? TOTAL_SOAL_FASYANKES : TOTAL_SOAL_INDUSTRI;
 
+    let totalPoin = 0;
     checklistArray.forEach(item => {
       // Jika dijawab "Ada"
       if (item.is_ada === true) {
-        // Cek apakah ada foto buktinya?
+        // Logika Poin: Ada + Foto = 1 | Ada + No Foto = 0.5
         if (item.bukti_foto && item.bukti_foto.length > 0) {
-          totalPoin += 1;   // Ada + Foto = 1 Poin
+          totalPoin += 1;   
         } else {
-          totalPoin += 0.5; // Ada + No Foto = 0.5 Poin
+          totalPoin += 0.5; 
         }
       }
     });
     
-    const nilai = Math.round((totalPoin / TOTAL_SOAL) * 100);
+    // Rumus dengan Pembagi Dinamis
+    const nilai = Math.round((totalPoin / PEMBAGI) * 100);
     return nilai > 100 ? 100 : nilai;
   };
 
-  // --- 4. FUNGSI LOGIKA WARNA & LABEL (Sesuai Gambar Kriteria) ---
+  // --- [3] LOGIKA WARNA (Sesuai Gambar Kriteria) ---
   const getStatusNilai = (nilai) => {
     if (nilai >= 90) return { label: "SANGAT BAIK", style: "bg-green-100 text-green-700 border-green-200" };
     if (nilai >= 70) return { label: "BAIK", style: "bg-cyan-100 text-cyan-700 border-cyan-200" };
@@ -156,10 +157,7 @@ export default function AdminDashboard() {
           <div className="flex items-center gap-2">
             <h1 className="text-lg font-bold tracking-wide">Dashboard Admin LH</h1>
           </div>
-          <button 
-            onClick={handleLogout}
-            className="text-sm bg-green-900 px-3 py-1 rounded hover:bg-red-600 transition-colors"
-          >
+          <button onClick={handleLogout} className="text-sm bg-green-900 px-3 py-1 rounded hover:bg-red-600 transition-colors">
             Logout
           </button>
         </div>
@@ -183,41 +181,19 @@ export default function AdminDashboard() {
                   required
                 />
               </div>
-
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">Kategori</label>
                 <div className="grid grid-cols-2 gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setTipeTarget('INDUSTRI')}
-                    className={`p-3 text-sm border rounded-lg font-bold flex flex-col items-center justify-center gap-1 transition-all ${
-                      tipeTarget === 'INDUSTRI' 
-                      ? 'bg-blue-600 text-white border-blue-600 shadow-md' 
-                      : 'bg-white text-gray-500 hover:bg-gray-50'
-                    }`}
-                  >
+                  <button type="button" onClick={() => setTipeTarget('INDUSTRI')} className={`p-3 text-sm border rounded-lg font-bold flex flex-col items-center justify-center gap-1 transition-all ${tipeTarget === 'INDUSTRI' ? 'bg-blue-600 text-white border-blue-600 shadow-md' : 'bg-white text-gray-500 hover:bg-gray-50'}`}>
                     <span>🏭</span> INDUSTRI
                   </button>
-                  <button
-                    type="button"
-                    onClick={() => setTipeTarget('FASYANKES')}
-                    className={`p-3 text-sm border rounded-lg font-bold flex flex-col items-center justify-center gap-1 transition-all ${
-                      tipeTarget === 'FASYANKES' 
-                      ? 'bg-teal-600 text-white border-teal-600 shadow-md' 
-                      : 'bg-white text-gray-500 hover:bg-gray-50'
-                    }`}
-                  >
+                  <button type="button" onClick={() => setTipeTarget('FASYANKES')} className={`p-3 text-sm border rounded-lg font-bold flex flex-col items-center justify-center gap-1 transition-all ${tipeTarget === 'FASYANKES' ? 'bg-teal-600 text-white border-teal-600 shadow-md' : 'bg-white text-gray-500 hover:bg-gray-50'}`}>
                     <span>🏥</span> FASYANKES
                   </button>
                 </div>
               </div>
-
-              <button 
-                type="submit" 
-                disabled={loading}
-                className="w-full bg-green-700 text-white py-3 rounded-lg hover:bg-green-800 font-bold shadow-lg transition-all"
-              >
-                {loading ? 'Menyimpan ke Database...' : '✨ Generate Token'}
+              <button type="submit" disabled={loading} className="w-full bg-green-700 text-white py-3 rounded-lg hover:bg-green-800 font-bold shadow-lg transition-all">
+                {loading ? 'Menyimpan...' : '✨ Generate Token'}
               </button>
             </form>
           </div>
@@ -246,7 +222,9 @@ export default function AdminDashboard() {
                 </thead>
                 <tbody className="divide-y divide-gray-100">
                   {tokens.map((item) => {
-                    const nilai = hitungNilai(item.checklist);
+                    // --- [4] PANGGIL FUNGSI DENGAN KATEGORI ---
+                    // Kita kirim 'item.kategori_target' agar fungsi tahu ini Industri atau Fasyankes
+                    const nilai = hitungNilai(item.checklist, item.kategori_target);
                     const statusNilai = getStatusNilai(nilai);
 
                     return (
@@ -283,13 +261,9 @@ export default function AdminDashboard() {
                         </td>
 
                         <td className="px-6 py-4 text-right flex justify-end gap-2">
-                          <button 
-                            onClick={() => copyLink(item.token)}
-                            className="text-blue-600 hover:text-blue-800 border border-blue-200 px-2 py-1 rounded bg-blue-50 text-xs"
-                          >
+                          <button onClick={() => copyLink(item.token)} className="text-blue-600 hover:text-blue-800 border border-blue-200 px-2 py-1 rounded bg-blue-50 text-xs">
                             Copy Link
                           </button>
-                          
                           {item.status === 'SUBMITTED' && (
                             <TombolDownloadPDF token={item.token} />
                           )}
@@ -297,7 +271,6 @@ export default function AdminDashboard() {
                       </tr>
                     );
                   })}
-                  
                   {tokens.length === 0 && (
                      <tr><td colSpan="5" className="text-center p-8 text-gray-400">Database masih kosong...</td></tr>
                   )}
@@ -306,7 +279,6 @@ export default function AdminDashboard() {
             </div>
           </div>
         </div>
-
       </div>
     </div>
   );

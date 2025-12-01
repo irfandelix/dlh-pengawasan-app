@@ -2,17 +2,177 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { CHECKLIST_ITEMS } from '@/app/data/checklist'; 
+
+// ==========================================
+// 1. DATA MASTER CHECKLIST: INDUSTRI
+// ==========================================
+const MASTER_CHECKLIST_INDUSTRI = [
+  {
+    kategori: "Dokumen Lingkungan",
+    items: [
+      "Dokumen AMDAL/DELH, UKL-UPL/DPLH, SPPL",
+      "Persetujuan Lingkungan (Lampirkan berkasnya)",
+      "Persetujuan Teknis (Lampirkan berkasnya)",
+      "Pelaporan pelaksanaan AMDAL/DELH, UKL-UPL/DPLH, SPPL"
+    ]
+  },
+  {
+    kategori: "Pengecekan terhadap Limbah Cair",
+    items: [
+      "Sumber air limbah",
+      "Kondisi fisik IPAL (permanen, kedap air)",
+      "Kondisi kinerja IPAL (peralatan bekerja/tdk, rusak, pengoperasian baik/tdk)",
+      "Skema/lay out IPAL",
+      "Alat ukur debit air limbah",
+      "Debit air limbah inlet dan outlet IPAL",
+      "Saluran air limbah",
+      "Data hasil uji kualitas air (Lampirkan hasilnya)",
+      "Pengelolaan sludge IPAL"
+    ]
+  },
+  {
+    kategori: "Pengecekan terhadap Sumber-sumber Emisi Udara",
+    items: [
+      "Data hasil uji udara emisi (Lampirkan hasilnya)",
+      "Data hasil uji udara ambien (Lampirkan hasilnya)",
+      "Alat pengendali emisi",
+      "Pengaduan masyarakat/gangguan kualitas udara yang terjadi",
+      "Upaya pengendalian pencemaran udara",
+      "Upaya pengendalian kebisingan, getaran, dan bau"
+    ]
+  },
+  {
+    kategori: "Pengecekan terhadap Limbah B3",
+    items: [
+      "Persetujuan Teknis Penyimpanan Sementara LB3 (Lampirkan berkasnya)",
+      "Sumber LB3",
+      "Jenis LB3",
+      "Neraca LB3 (Lampirkan berkasnya)",
+      "Logbook LB3 (Lampirkan berkasnya)",
+      "Jumlah LB3",
+      "Waktu penyimpanan LB3",
+      "Pelaporan Limbah B3"
+    ]
+  },
+  {
+    kategori: "Capaian Kinerja Pengurangan Sampah Tahun 2025",
+    items: [
+      "Usaha dan/atau kegiatan yang memiliki jumlah pekerja sama dengan atau lebih dari 1000 orang wajib memiliki sarana pengolah sampah organik (minimal komposter)"
+    ]
+  },
+  {
+    kategori: "Pemanfaatan Sampah",
+    items: [
+      "Jenis Sampah yang dimanfaatkan kembali",
+      "Jumlah Kemasan Botol Kaca/Beling (ton/bulan)",
+      "Jumlah Kemasan Botol PET (ton/bulan)",
+      "Jumlah Kemasan Botol Aluminium (ton/bulan)",
+      "Jumlah Kemasan Cat (ton/bulan)",
+      "Jumlah Ban (Mobil/Motor/Sepeda) (ton/bulan)",
+      "Jumlah Lain-Lain (ton/bulan)",
+      "Total Sampah yang Dimanfaatkan Kembali (ton/bulan)",
+      "Jumlah Sampah yang Dimanfaatkan Kembali (ton/tahun)"
+    ]
+  },
+  {
+    kategori: "Pembatasan Timbulan Sampah",
+    items: [
+      "Larangan penggunaan bahan styrofoam serta bahan plastik sekali pakai (Lampirkan bukti dokumentasinya)",
+      "Larangan penggunaan sedotan plastik (Lampirkan bukti dokumentasinya)",
+      "Himbauan penggunaan kantong wadah atau kemasan yang ramah lingkungan (Lampirkan bukti dokumentasinya)",
+      "Himbauan pemilahan sampah sekurang-kurangnya untuk tiga jenis sampah yaitu sampah organik (sisa makanan, sisa sayuran, daun, dll), plastik dan kertas (Lampirkan bukti dokumentasinya)",
+      "Mendaur ulang sampah plastik, dan kertas yang dapat didaur ulang (Lampirkan bukti dokumentasinya)",
+      "Menghidangkan makan minum dengan piring dan gelas (Lampirkan bukti dokumentasinya)",
+      "Jumlah Sampah yang dibatasi (ton/hari)",
+      "Jumlah Sampah yang dibatasi (ton/tahun)"
+    ]
+  }
+];
+
+// ==========================================
+// 2. DATA MASTER CHECKLIST: FASYANKES
+// ==========================================
+const MASTER_CHECKLIST_FASYANKES = [
+  {
+    kategori: "Dokumen Lingkungan",
+    items: [
+      "Dokumen AMDAL/DELH, UKL-UPL/DPLH, SPPL",
+      "Persetujuan Lingkungan (Lampirkan berkasnya)",
+      "Persetujuan Teknis (Lampirkan berkasnya)",
+      "Pelaporan Pelaksanaan AMDAL/DELH, UKL-UPL/DPLH, SPPL"
+    ]
+  },
+  {
+    kategori: "Pengecekan terhadap Limbah Cair",
+    items: [
+      "Sumber air limbah",
+      "Kondisi fisik IPAL (permanen, kedap air)",
+      "Kondisi kinerja IPAL (peralatan bekerja/tdk, rusak, pengoperasian baik / tdk)",
+      "Skema/lay out IPAL",
+      "Alat ukur debit air limbah",
+      "Debit air limbah inlet dan outlet IPAL",
+      "Saluran air limbah",
+      "Data hasil uji kualitas air limbah (Lampirkan hasilnya)",
+      "Pengelolaan sludge IPAL"
+    ]
+  },
+  {
+    kategori: "Pengecekan terhadap Limbah B3",
+    items: [
+      "Persetujuan Teknis Penyimpanan Sementara LB3 (Lampirkan berkasnya)",
+      "Sumber LB3",
+      "Jenis LB3",
+      "Neraca LB3 (Lampirkan berkasnya)",
+      "Logbook LB3 (Lampirkan berkasnya)",
+      "Jumlah LB3",
+      "Waktu penyimpanan LB3",
+      "Pelaporan Limbah B3"
+    ]
+  },
+  {
+    kategori: "Capaian Kinerja Pengurangan Sampah Tahun 2025",
+    items: [
+      "Usaha dan/atau kegiatan yang memiliki jumlah pekerja sama dengan atau lebih dari 1000 orang wajib memiliki sarana pengolah sampah organik (minimal komposter)"
+    ]
+  },
+  {
+    kategori: "Pemanfaatan Sampah",
+    items: [
+      "Jenis Sampah yang dimanfaatkan kembali",
+      "Jumlah Kemasan Botol Kaca/Beling (ton/bulan)",
+      "Jumlah Kemasan Botol PET (ton/bulan)",
+      "Jumlah Kemasan Botol Aluminium (ton/bulan)",
+      "Jumlah Kemasan Cat (ton/bulan)",
+      "Jumlah Ban (Mobil/Motor/Sepeda) (ton/bulan)",
+      "Jumlah Lain-Lain (ton/bulan)",
+      "Total Sampah yang Dimanfaatkan Kembali (ton/bulan)",
+      "Jumlah Sampah yang Dimanfaatkan Kembali (ton/tahun)"
+    ]
+  },
+  {
+    kategori: "Pembatasan Timbulan Sampah",
+    items: [
+      "Larangan penggunaan bahan styrofoam serta bahan plastik sekali pakai (Lampirkan bukti dokumentasinya)",
+      "Larangan penggunaan sedotan plastik (Lampirkan bukti dokumentasinya)",
+      "Himbauan penggunaan kantong wadah atau kemasan yang ramah lingkungan (Lampirkan bukti dokumentasinya)",
+      "Himbauan pemilahan sampah sekurang-kurangnya untuk tiga jenis sampah yaitu sampah organik (sisa makanan, sisa sayuran, daun, dll), plastik dan kertas (Lampirkan bukti dokumentasinya)",
+      "Mendaur ulang sampah plastik, dan kertas yang dapat didaur ulang (Lampirkan bukti dokumentasinya)",
+      "Menghidangkan makan minum dengan piring dan gelas (Lampirkan bukti dokumentasinya)",
+      "Jumlah Sampah yang dibatasi (ton/hari)",
+      "Jumlah Sampah yang dibatasi (ton/tahun)"
+    ]
+  }
+];
 
 export default function FormLaporanPage() {
-  const params = useParams(); // Ambil token dari URL
+  const params = useParams(); 
   const router = useRouter();
   const token = params.token;
 
   const [activeTab, setActiveTab] = useState(1);
   const [loading, setLoading] = useState(false);
+  const [activeChecklist, setActiveChecklist] = useState([]); // State untuk menyimpan List Pertanyaan
   
-  // State Data Utama
   const [formData, setFormData] = useState({
     token: token,
     profil: {},
@@ -23,7 +183,13 @@ export default function FormLaporanPage() {
   useEffect(() => {
     const fetchInitialData = async () => {
        try {
-         const res = await fetch('/api/cek-token', {
+         // Kita gunakan endpoint GET by Token yang sudah dibuat di route
+         // Ganti endpoint ini sesuai route backend kamu (misal: /api/lapor/[token] atau /api/cek-token)
+         // Asumsi pakai: /api/admin/pdf (karena route ini punya GET by token yg lengkap) 
+         // ATAU kalau kamu punya route khusus untuk cek token user, pakai itu.
+         // Disini saya pakai logika fetch yang ada di kode kamu sebelumnya: /api/cek-token
+         
+         const res = await fetch('/api/cek-token', { // Pastikan route ini ada dan mengembalikan kategori_target
             method: 'POST', 
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({ token })
@@ -31,6 +197,14 @@ export default function FormLaporanPage() {
          const json = await res.json();
          
          if(json.success) {
+            // 1. SET LIST PERTANYAAN BERDASARKAN KATEGORI
+            if (json.data.kategori_target === 'FASYANKES' || json.data.kategori === 'FASYANKES') {
+                setActiveChecklist(MASTER_CHECKLIST_FASYANKES);
+            } else {
+                setActiveChecklist(MASTER_CHECKLIST_INDUSTRI);
+            }
+
+            // 2. SET DATA FORM (Draft atau Baru)
             const draft = localStorage.getItem(`draft_${token}`);
             if (draft) {
                const parsedDraft = JSON.parse(draft);
@@ -39,7 +213,7 @@ export default function FormLaporanPage() {
                  profil: { 
                    ...parsedDraft.profil, 
                    nama_usaha: json.data.nama_usaha,
-                   kategori: json.data.kategori
+                   kategori: json.data.kategori_target || json.data.kategori // Pastikan field match DB
                  } 
                }));
             } else {
@@ -48,7 +222,7 @@ export default function FormLaporanPage() {
                  profil: { 
                    ...prev.profil, 
                    nama_usaha: json.data.nama_usaha,
-                   kategori: json.data.kategori
+                   kategori: json.data.kategori_target || json.data.kategori
                  }
                }));
             }
@@ -175,10 +349,13 @@ export default function FormLaporanPage() {
       const payload = {
         token: token,
         profil: formData.profil,
-        checklist: formData.checklist
+        checklist: formData.checklist,
+        status: 'SUBMITTED' // Pastikan status berubah jadi SUBMITTED
       };
 
-      const res = await fetch('/api/laporan', {
+      // Gunakan route yang sesuai untuk update/submit laporan
+      // Asumsi route kamu: /api/laporan atau /api/lapor/[token]
+      const res = await fetch('/api/laporan', { 
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
@@ -188,7 +365,7 @@ export default function FormLaporanPage() {
       if (json.success) {
         alert("✅ TERIMA KASIH! Laporan berhasil disimpan ke Database.");
         localStorage.removeItem(`draft_${token}`);
-        router.push('/');
+        router.push('/sukses'); // Atau halaman sukses
       } else {
         alert("Gagal kirim: " + json.error);
       }
@@ -198,6 +375,9 @@ export default function FormLaporanPage() {
       setLoading(false);
     }
   };
+
+  // Helper untuk cek kategori saat render
+  const isFasyankes = formData.profil.kategori === 'FASYANKES';
 
   return (
     <div 
@@ -303,8 +483,8 @@ export default function FormLaporanPage() {
                   <div className="md:col-span-2 bg-blue-50 p-4 rounded-md border border-blue-100">
                     <label className="label-text text-blue-800">Surat Izin Pemanfaatan Air Tanah (SIPA)</label>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
-                       <input type="text" name="no_sipa" value={formData.profil.no_sipa || ''} onChange={handleProfilChange} className="input-field" placeholder="Nomor SIPA" />
-                       <div className="flex flex-col justify-center">
+                        <input type="text" name="no_sipa" value={formData.profil.no_sipa || ''} onChange={handleProfilChange} className="input-field" placeholder="Nomor SIPA" />
+                        <div className="flex flex-col justify-center">
                           <label className="cursor-pointer bg-white border border-blue-300 text-blue-700 px-4 py-2 rounded hover:bg-blue-50 text-sm font-medium text-center shadow-sm transition-all hover:shadow-md">
                              <span>{formData.profil.file_sipa ? "✅ Berkas Terupload (Ganti?)" : "📂 Upload Scan SIPA (PDF)"}</span>
                              <input 
@@ -315,7 +495,7 @@ export default function FormLaporanPage() {
                              />
                           </label>
                           <p className="text-xs text-gray-400 mt-1 text-center">Maksimal 5MB</p>
-                       </div>
+                        </div>
                     </div>
                   </div>
 
@@ -343,10 +523,20 @@ export default function FormLaporanPage() {
                     <label className="label-text">Shift Kerja / Hari</label>
                     <input type="number" name="shift_kerja" value={formData.profil.shift_kerja || ''} onChange={handleProfilChange} className="input-field" />
                   </div>
+                  
+                  {/* FIELD KHUSUS FASYANKES */}
+                  {isFasyankes && (
+                    <div className="bg-yellow-50 p-4 border border-yellow-200 rounded md:col-span-2">
+                        <label className="label-text text-yellow-800">Jumlah Tempat Tidur (Khusus Fasyankes)</label>
+                        <input type="number" name="jumlah_tempat_tidur" value={formData.profil.jumlah_tempat_tidur || ''} onChange={handleProfilChange} className="input-field mt-1" />
+                    </div>
+                  )}
+
                 </div>
               </div>
 
-              {/* C. PRODUKSI */}
+              {/* C. PRODUKSI (HANYA MUNCUL JIKA BUKAN FASYANKES/INDUSTRI) */}
+              {!isFasyankes && (
               <div>
                 <h3 className="text-lg font-bold text-green-800 border-b-2 border-green-100 pb-2 mb-4">C. Kapasitas & Proses Produksi</h3>
                 
@@ -404,6 +594,7 @@ export default function FormLaporanPage() {
                   </div>
                 </div>
               </div>
+              )}
 
               {/* D. ENERGI & LINGKUNGAN */}
               <div>
@@ -445,8 +636,8 @@ export default function FormLaporanPage() {
                   <div>
                     <label className="label-text">Ruang Terbuka Hijau (RTH)</label>
                     <div className="flex items-center gap-2">
-                       <input type="number" name="rth_persen" value={formData.profil.rth_persen || ''} onChange={handleProfilChange} className="input-field" placeholder="10 - 20" />
-                       <span className="font-bold text-gray-600">%</span>
+                        <input type="number" name="rth_persen" value={formData.profil.rth_persen || ''} onChange={handleProfilChange} className="input-field" placeholder="10 - 20" />
+                        <span className="font-bold text-gray-600">%</span>
                     </div>
                     <p className="text-xs text-gray-500 mt-1">* Wajib 10% - 20% dari luas lahan.</p>
                   </div>
@@ -461,11 +652,12 @@ export default function FormLaporanPage() {
             </div>
           )}
 
-          {/* --- TAB 2: CHECKLIST --- */}
+          {/* --- TAB 2: CHECKLIST (DINAMIS) --- */}
           {activeTab === 2 && (
             <div className="space-y-8 animate-fade-in">
               
-              {CHECKLIST_ITEMS.map((group, idx) => (
+              {/* LOOPING CHECKLIST SESUAI KATEGORI (Industri / Fasyankes) */}
+              {activeChecklist.map((group, idx) => (
                 <div key={idx} className="border rounded-lg overflow-hidden mb-6 shadow-sm border-gray-200">
                   <div className="bg-green-50 px-4 py-3 border-b border-green-100">
                     <h3 className="font-bold text-green-900">{group.kategori}</h3>
@@ -560,7 +752,7 @@ export default function FormLaporanPage() {
           padding: 0.6rem; 
           font-size: 0.875rem; 
           color: #000000; 
-          background-color: #ffffff; /* DIKEMBALIKAN PUTIH */
+          background-color: #ffffff; 
         }
 
         .input-field::placeholder {

@@ -3,10 +3,12 @@ import { PDFDocument } from 'pdf-lib';
 import dbConnect from '@/lib/db';
 import Laporan from '@/models/Laporan';
 
-// --- DATA MASTER CHECKLIST (SAMA SEPERTI SEBELUMNYA) ---
-const MASTER_CHECKLIST = [
+// ==========================================
+// 1. DATA MASTER CHECKLIST: INDUSTRI (45 Soal)
+// ==========================================
+const MASTER_CHECKLIST_INDUSTRI = [
   {
-    kategori: "A. Dokumen Lingkungan",
+    kategori: "Dokumen Lingkungan",
     items: [
       "Dokumen AMDAL/DELH, UKL-UPL/DPLH, SPPL",
       "Persetujuan Lingkungan (Lampirkan berkasnya)",
@@ -15,7 +17,7 @@ const MASTER_CHECKLIST = [
     ]
   },
   {
-    kategori: "B. Pengecekan terhadap Limbah Cair",
+    kategori: "Pengecekan terhadap Limbah Cair",
     items: [
       "Sumber air limbah",
       "Kondisi fisik IPAL (permanen, kedap air)",
@@ -29,7 +31,7 @@ const MASTER_CHECKLIST = [
     ]
   },
   {
-    kategori: "C. Pengecekan terhadap Sumber-sumber Emisi Udara",
+    kategori: "Pengecekan terhadap Sumber-sumber Emisi Udara",
     items: [
       "Data hasil uji udara emisi (Lampirkan hasilnya)",
       "Data hasil uji udara ambien (Lampirkan hasilnya)",
@@ -40,7 +42,7 @@ const MASTER_CHECKLIST = [
     ]
   },
   {
-    kategori: "D. Pengecekan terhadap Limbah B3",
+    kategori: "Pengecekan terhadap Limbah B3",
     items: [
       "Persetujuan Teknis Penyimpanan Sementara LB3 (Lampirkan berkasnya)",
       "Sumber LB3",
@@ -52,18 +54,14 @@ const MASTER_CHECKLIST = [
       "Pelaporan Limbah B3"
     ]
   },
-  
-  // --- KATEGORI 5: CAPAIAN KINERJA ---
   {
-    kategori: "E. Capaian Kinerja Pengurangan Sampah Tahun 2025",
+    kategori: "Capaian Kinerja Pengurangan Sampah Tahun 2025",
     items: [
       "Usaha dan/atau kegiatan yang memiliki jumlah pekerja sama dengan atau lebih dari 1000 orang wajib memiliki sarana pengolah sampah organik (minimal komposter)"
     ]
   },
-
-  // --- KATEGORI 6: PEMANFAATAN SAMPAH (DIPISAH JADI KATEGORI BARU) ---
   {
-    kategori: "F. Pemanfaatan Sampah",
+    kategori: "Pemanfaatan Sampah",
     items: [
       "Jenis Sampah yang dimanfaatkan kembali",
       "Jumlah Kemasan Botol Kaca/Beling (ton/bulan)",
@@ -76,10 +74,84 @@ const MASTER_CHECKLIST = [
       "Jumlah Sampah yang Dimanfaatkan Kembali (ton/tahun)"
     ]
   },
-
-  // --- KATEGORI 7: PEMBATASAN TIMBULAN SAMPAH (DIPISAH JADI KATEGORI BARU) ---
   {
-    kategori: "G. Pembatasan Timbulan Sampah",
+    kategori: "Pembatasan Timbulan Sampah",
+    items: [
+      "Larangan penggunaan bahan styrofoam serta bahan plastik sekali pakai (Lampirkan bukti dokumentasinya)",
+      "Larangan penggunaan sedotan plastik (Lampirkan bukti dokumentasinya)",
+      "Himbauan penggunaan kantong wadah atau kemasan yang ramah lingkungan (Lampirkan bukti dokumentasinya)",
+      "Himbauan pemilahan sampah sekurang-kurangnya untuk tiga jenis sampah yaitu sampah organik (sisa makanan, sisa sayuran, daun, dll), plastik dan kertas (Lampirkan bukti dokumentasinya)",
+      "Mendaur ulang sampah plastik, dan kertas yang dapat didaur ulang (Lampirkan bukti dokumentasinya)",
+      "Menghidangkan makan minum dengan piring dan gelas (Lampirkan bukti dokumentasinya)",
+      "Jumlah Sampah yang dibatasi (ton/hari)",
+      "Jumlah Sampah yang dibatasi (ton/tahun)"
+    ]
+  }
+];
+
+// ==========================================
+// 2. DATA MASTER CHECKLIST: FASYANKES (38 Soal)
+// ==========================================
+// Sesuai PDF: Tidak ada Emisi Udara [cite: 66]
+const MASTER_CHECKLIST_FASYANKES = [
+  {
+    kategori: "Dokumen Lingkungan",
+    items: [
+      "Dokumen AMDAL/DELH, UKL-UPL/DPLH, SPPL",
+      "Persetujuan Lingkungan (Lampirkan berkasnya)",
+      "Persetujuan Teknis (Lampirkan berkasnya)",
+      "Pelaporan Pelaksanaan AMDAL/DELH, UKL-UPL/DPLH, SPPL"
+    ]
+  },
+  {
+    kategori: "Pengecekan terhadap Limbah Cair",
+    items: [
+      "Sumber air limbah",
+      "Kondisi fisik IPAL (permanen, kedap air)",
+      "Kondisi kinerja IPAL (peralatan bekerja/tdk, rusak, pengoperasian baik / tdk)",
+      "Skema/lay out IPAL",
+      "Alat ukur debit air limbah",
+      "Debit air limbah inlet dan outlet IPAL",
+      "Saluran air limbah",
+      "Data hasil uji kualitas air limbah (Lampirkan hasilnya)",
+      "Pengelolaan sludge IPAL"
+    ]
+  },
+  {
+    kategori: "Pengecekan terhadap Limbah B3",
+    items: [
+      "Persetujuan Teknis Penyimpanan Sementara LB3 (Lampirkan berkasnya)",
+      "Sumber LB3",
+      "Jenis LB3",
+      "Neraca LB3 (Lampirkan berkasnya)",
+      "Logbook LB3 (Lampirkan berkasnya)",
+      "Jumlah LB3",
+      "Waktu penyimpanan LB3",
+      "Pelaporan Limbah B3"
+    ]
+  },
+  {
+    kategori: "Capaian Kinerja Pengurangan Sampah Tahun 2025",
+    items: [
+      "Usaha dan/atau kegiatan yang memiliki jumlah pekerja sama dengan atau lebih dari 1000 orang wajib memiliki sarana pengolah sampah organik (minimal komposter)"
+    ]
+  },
+  {
+    kategori: "Pemanfaatan Sampah",
+    items: [
+      "Jenis Sampah yang dimanfaatkan kembali",
+      "Jumlah Kemasan Botol Kaca/Beling (ton/bulan)",
+      "Jumlah Kemasan Botol PET (ton/bulan)",
+      "Jumlah Kemasan Botol Aluminium (ton/bulan)",
+      "Jumlah Kemasan Cat (ton/bulan)",
+      "Jumlah Ban (Mobil/Motor/Sepeda) (ton/bulan)",
+      "Jumlah Lain-Lain (ton/bulan)",
+      "Total Sampah yang Dimanfaatkan Kembali (ton/bulan)",
+      "Jumlah Sampah yang Dimanfaatkan Kembali (ton/tahun)"
+    ]
+  },
+  {
+    kategori: "Pembatasan Timbulan Sampah",
     items: [
       "Larangan penggunaan bahan styrofoam serta bahan plastik sekali pakai (Lampirkan bukti dokumentasinya)",
       "Larangan penggunaan sedotan plastik (Lampirkan bukti dokumentasinya)",
@@ -105,6 +177,11 @@ export async function GET(request) {
 
     if (!data) return NextResponse.json({ error: 'Data tidak ditemukan' }, { status: 404 });
 
+    // --- PILIH CHECKLIST BERDASARKAN KATEGORI ---
+    const activeChecklist = data.kategori_target === 'FASYANKES' 
+      ? MASTER_CHECKLIST_FASYANKES 
+      : MASTER_CHECKLIST_INDUSTRI;
+
     // --- HELPERS ---
     const formatDriveImg = (url) => {
       if (!url) return null;
@@ -115,7 +192,7 @@ export async function GET(request) {
 
     const p = data.profil || {};
     
-    // --- LOGIC DETEKSI TIPE FILE SIPA (PDF vs IMAGE) ---
+    // --- LOGIC DETEKSI SIPA (PDF vs IMAGE) ---
     let sipaIsPdf = false;
     let sipaBuffer = null;
     let sipaImgUrl = null;
@@ -181,9 +258,6 @@ export async function GET(request) {
         .cat-row td { background-color: #f2f2f2; font-weight: bold; padding: 5px; border-top: 2px solid #000; border-bottom: 1px solid #000; }
         .check-center { text-align: center; font-size: 12pt; font-family: DejaVu Sans, sans-serif; }
         .footer-signature { position: fixed; bottom: -2.5cm; left: 0; right: 0; height: 2.5cm; font-size: 7pt; font-weight: bold; background-color: white; z-index: 1000; }
-        .sig-line { border-top: 2px solid #000; margin-bottom: 5px; width: 100%; }
-        .sig-table { width: 100%; border: none; font-size: 7pt; font-weight: bold; }
-        .sig-table td { border: none; vertical-align: top; padding: 2px 0; }
         .photo-grid { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
         .photo-item { width: 48%; border: 1px solid #000; padding: 5px; text-align: center; page-break-inside: avoid; }
         .photo-item img { max-width: 100%; max-height: 200px; object-fit: contain; }
@@ -192,16 +266,12 @@ export async function GET(request) {
       </style>
     </head>
     <body>
-      <div class="top-right-label">1 Lampiran Berita Acara</div>
-      <div class="doc-title">Lampiran Berita Acara Pengawasan Penaatan Lingkungan Hidup Daerah Kab. Sragen</div>
-      <div class="doc-year">Tahun 2025</div>
-      
-      ${htmlContentBody(p, data, dataMap, sipaImgUrl, sipaIsPdf, MASTER_CHECKLIST, formatDriveImg)}
-      
+      ${htmlContentBody(p, data, dataMap, sipaImgUrl, sipaIsPdf, activeChecklist, formatDriveImg)}
     </body>
     </html>
     `;
 
+    // --- FOOTER TANDA TANGAN ---
     const footerTemplate = `
       <div style="font-family: 'Times New Roman', serif; font-size: 8px; width: 100%; margin: 0 2cm; padding-bottom: 5px;">
         <div style="border-top: 2px solid black; width: 100%; margin-bottom: 2px;"></div>
@@ -213,16 +283,12 @@ export async function GET(request) {
       </div>
     `;
 
-    // --- SETUP PUPPETEER HYBRID FINAL ---
+    // --- SETUP PUPPETEER HYBRID ---
     let browser;
-    
     if (process.env.NODE_ENV === 'production') {
-      // --- MODE VERCEL (Production) ---
       const chromium = await import('@sparticuz/chromium-min').then(mod => mod.default);
       const puppeteerCore = await import('puppeteer-core').then(mod => mod.default);
 
-      // KONFIGURASI PENTING UNTUK VERCEL:
-      // Kita arahkan ke URL remote agar tidak error "directory not found"
       chromium.setGraphicsMode = false;
       const executablePath = await chromium.executablePath(
         "https://github.com/Sparticuz/chromium/releases/download/v123.0.1/chromium-v123.0.1-pack.tar"
@@ -236,7 +302,6 @@ export async function GET(request) {
       });
 
     } else {
-      // --- MODE LOCAL (Development) ---
       const puppeteer = await import('puppeteer').then(mod => mod.default);
       browser = await puppeteer.launch({
         headless: 'new',
@@ -258,7 +323,7 @@ export async function GET(request) {
 
     await browser.close();
 
-    // --- MERGE PDF LOGIC ---
+    // --- MERGE PDF SIPA ---
     let finalPdfBuffer = reportPdfBuffer;
     if (sipaIsPdf && sipaBuffer) {
       const reportPdfDoc = await PDFDocument.load(reportPdfBuffer);
@@ -283,9 +348,16 @@ export async function GET(request) {
   }
 }
 
-// --- HELPER FUNCTION UNTUK BODY HTML (Supaya rapi) ---
-function htmlContentBody(p, data, dataMap, sipaImgUrl, sipaIsPdf, MASTER_CHECKLIST, formatDriveImg) {
+// --- HELPER FUNCTION HTML BODY ---
+function htmlContentBody(p, data, dataMap, sipaImgUrl, sipaIsPdf, activeChecklist, formatDriveImg) {
+    // Cek apakah ini Fasyankes untuk menampilkan "Jumlah Tempat Tidur"
+    const isFasyankes = data.kategori_target === 'FASYANKES';
+
     return `
+      <div class="top-right-label">1 Lampiran Berita Acara</div>
+      <div class="doc-title">Lampiran Berita Acara Pengawasan Penaatan Lingkungan Hidup Daerah Kab. Sragen</div>
+      <div class="doc-year">Tahun 2025</div>
+
       <div class="section-title">I. PROFIL JENIS USAHA DAN/ATAU KEGIATAN</div>
 
       <table class="main-table">
@@ -308,6 +380,11 @@ function htmlContentBody(p, data, dataMap, sipaImgUrl, sipaIsPdf, MASTER_CHECKLI
         <tr><td class="col-label">Jumlah Karyawan</td><td class="col-sep">:</td><td class="col-val">${p.jumlah_karyawan || ''} (Orang)</td></tr>
         <tr><td class="col-label">Jam Shift Kerja/Hari</td><td class="col-sep">:</td><td class="col-val">${p.shift_kerja || ''} (shift kerja)</td></tr>
         
+        ${isFasyankes ? `
+        <tr><td class="col-label">Jumlah Tempat Tidur</td><td class="col-sep">:</td><td class="col-val">${p.jumlah_tempat_tidur || ''}</td></tr>
+        ` : ''}
+
+        ${!isFasyankes ? `
         <tr>
           <td class="col-label">Kapasitas Produksi<br/>(tabung/hari/shif)</td>
           <td class="col-sep">:</td>
@@ -315,29 +392,32 @@ function htmlContentBody(p, data, dataMap, sipaImgUrl, sipaIsPdf, MASTER_CHECKLI
             <table class="nested-table">
               <tr><td width="33%">Terpasang</td><td width="33%">Sesuai Izin</td><td width="33%">Riil</td></tr>
               <tr>
-                <td>${p.kapasitas_produksi?.terpasang || p.kapasitas_terpasang || ''}<br/>(menit/bulan)</td>
-                <td>${p.kapasitas_produksi?.sesuai_izin || p.kapasitas_izin || ''}<br/>(menit/bulan)</td>
-                <td>${p.kapasitas_produksi?.riil || p.kapasitas_riil || ''}<br/>(menit/tahun)</td>
+                <td>${p.kapasitas_produksi?.terpasang || ''}<br/>(menit/bulan)</td>
+                <td>${p.kapasitas_produksi?.sesuai_izin || ''}<br/>(menit/bulan)</td>
+                <td>${p.kapasitas_produksi?.riil || ''}<br/>(menit/tahun)</td>
               </tr>
             </table>
           </td>
         </tr>
-
         <tr><td class="col-label">Bahan Baku Utama</td><td class="col-sep">:</td><td class="col-val">${p.bahan_baku_utama || ''}</td></tr>
         <tr><td class="col-label">Bahan Baku Penolong</td><td class="col-sep">:</td><td class="col-val">${p.bahan_baku_penolong || ''}</td></tr>
         <tr><td class="col-label">Proses Produksi</td><td class="col-sep">:</td><td class="col-val">${p.proses_produksi || ''}</td></tr>
-        <tr><td class="col-label">Prosentase Pemasaran Export</td><td class="col-sep">:</td><td class="col-val">${p.persen_export || p.pemasaran_export || ''}</td></tr>
+        <tr><td class="col-label">Prosentase Pemasaran Export</td><td class="col-sep">:</td><td class="col-val">${p.persen_export || ''}</td></tr>
+        ` : ''}
       </table>
 
       <div style="page-break-before: always;"></div>
 
       <table class="main-table" style="margin-top: 20px;">
-        <tr><td class="col-label">Prosentase Pemasaran Domestik</td><td class="col-sep">:</td><td class="col-val">${p.persen_domestik || p.pemasaran_domestik || ''}</td></tr>
+        ${!isFasyankes ? `
+        <tr><td class="col-label">Prosentase Pemasaran Domestik</td><td class="col-sep">:</td><td class="col-val">${p.persen_domestik || ''}</td></tr>
         <tr><td class="col-label">Merek Dagang</td><td class="col-sep">:</td><td class="col-val">${p.merek_dagang || ''}</td></tr>
+        ` : ''}
+        
         <tr><td class="col-label">Bahan Bakar Yang Digunakan</td><td class="col-sep">:</td><td class="col-val">${p.bahan_bakar || ''}</td></tr>
         <tr><td class="col-label">Satuan Bahan Bakar</td><td class="col-sep">:</td><td class="col-val">${p.satuan_bahan_bakar || ''}</td></tr>
-        <tr><td class="col-label">Jumlah Konsumsi Bahan Bakar/th</td><td class="col-sep">:</td><td class="col-val">${p.konsumsi_bb_tahun || p.konsumsi_bb || ''}</td></tr>
-        <tr><td class="col-label">Sistem Manajemen Lingkungan</td><td class="col-sep">:</td><td class="col-val">${p.sistem_manajemen_lingkungan || p.sistem_manajemen || ''}</td></tr>
+        <tr><td class="col-label">Jumlah Konsumsi Bahan Bakar/th</td><td class="col-sep">:</td><td class="col-val">${p.konsumsi_bb_tahun || ''}</td></tr>
+        <tr><td class="col-label">Sistem Manajemen Lingkungan</td><td class="col-sep">:</td><td class="col-val">${p.sistem_manajemen_lingkungan || ''}</td></tr>
         <tr><td class="col-label">Dokumen Lingkungan</td><td class="col-sep">:</td><td class="col-val">${p.dokumen_lingkungan || ''}</td></tr>
         <tr><td class="col-label">Inspeksi Terakhir</td><td class="col-sep">:</td><td class="col-val">${p.tgl_inspeksi_terakhir || p.inspeksi_terakhir ? new Date(p.tgl_inspeksi_terakhir || p.inspeksi_terakhir).toLocaleDateString('id-ID') : ''}</td></tr>
       </table>
@@ -361,7 +441,7 @@ function htmlContentBody(p, data, dataMap, sipaImgUrl, sipaIsPdf, MASTER_CHECKLI
           </tr>
         </thead>
         <tbody>
-          ${MASTER_CHECKLIST.map(category => {
+          ${activeChecklist.map(category => {
             const listItems = category.items.map(pertanyaan => {
               const key = `${category.kategori}|${pertanyaan}`;
               const dataItem = dataMap[key]; 

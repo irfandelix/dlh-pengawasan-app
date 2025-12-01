@@ -18,12 +18,15 @@ export async function POST(request) {
       return NextResponse.json({ success: false, message: 'Laporan sudah dikirim.' }, { status: 400 });
     }
 
-    return NextResponse.json({ 
+return NextResponse.json({ 
       success: true, 
       data: {
         token: laporan.token,
         nama_usaha: laporan.profil?.nama_usaha,
-        kategori: laporan.kategori_target
+        kategori: laporan.kategori_target,
+        // Tambahan: Kirim data lengkap biar aman
+        profil: laporan.profil, 
+        checklist: laporan.checklist 
       } 
     });
 
