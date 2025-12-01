@@ -90,9 +90,9 @@ const MASTER_CHECKLIST_INDUSTRI = [
 ];
 
 // ==========================================
-// 2. DATA MASTER CHECKLIST: FASYANKES (38 Soal)
+// DATA MASTER CHECKLIST: FASYANKES (SESUAI GAMBAR PDF)
+// Total: 39 Soal
 // ==========================================
-// Sesuai PDF: Tidak ada Emisi Udara [cite: 66]
 const MASTER_CHECKLIST_FASYANKES = [
   {
     kategori: "Dokumen Lingkungan",

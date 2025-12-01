@@ -90,7 +90,8 @@ const MASTER_CHECKLIST_INDUSTRI = [
 ];
 
 // ==========================================
-// 2. DATA MASTER CHECKLIST: FASYANKES
+// DATA MASTER CHECKLIST: FASYANKES (SESUAI GAMBAR PDF)
+// Total: 39 Soal
 // ==========================================
 const MASTER_CHECKLIST_FASYANKES = [
   {
