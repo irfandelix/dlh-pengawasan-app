@@ -6,7 +6,7 @@ import Laporan from '@/models/Laporan';
 // --- DATA MASTER CHECKLIST (SAMA SEPERTI SEBELUMNYA) ---
 const MASTER_CHECKLIST = [
   {
-    kategori: "Dokumen Lingkungan",
+    kategori: "A. Dokumen Lingkungan",
     items: [
       "Dokumen AMDAL/DELH, UKL-UPL/DPLH, SPPL",
       "Persetujuan Lingkungan (Lampirkan berkasnya)",
@@ -15,7 +15,7 @@ const MASTER_CHECKLIST = [
     ]
   },
   {
-    kategori: "Pengecekan terhadap Limbah Cair",
+    kategori: "B. Pengecekan terhadap Limbah Cair",
     items: [
       "Sumber air limbah",
       "Kondisi fisik IPAL (permanen, kedap air)",
@@ -29,7 +29,7 @@ const MASTER_CHECKLIST = [
     ]
   },
   {
-    kategori: "Pengecekan terhadap Sumber-sumber Emisi Udara",
+    kategori: "C. Pengecekan terhadap Sumber-sumber Emisi Udara",
     items: [
       "Data hasil uji udara emisi (Lampirkan hasilnya)",
       "Data hasil uji udara ambien (Lampirkan hasilnya)",
@@ -40,7 +40,7 @@ const MASTER_CHECKLIST = [
     ]
   },
   {
-    kategori: "Pengecekan terhadap Limbah B3",
+    kategori: "D. Pengecekan terhadap Limbah B3",
     items: [
       "Persetujuan Teknis Penyimpanan Sementara LB3 (Lampirkan berkasnya)",
       "Sumber LB3",
@@ -55,7 +55,7 @@ const MASTER_CHECKLIST = [
   
   // --- KATEGORI 5: CAPAIAN KINERJA ---
   {
-    kategori: "Capaian Kinerja Pengurangan Sampah Tahun 2025",
+    kategori: "E. Capaian Kinerja Pengurangan Sampah Tahun 2025",
     items: [
       "Usaha dan/atau kegiatan yang memiliki jumlah pekerja sama dengan atau lebih dari 1000 orang wajib memiliki sarana pengolah sampah organik (minimal komposter)"
     ]
@@ -63,7 +63,7 @@ const MASTER_CHECKLIST = [
 
   // --- KATEGORI 6: PEMANFAATAN SAMPAH (DIPISAH JADI KATEGORI BARU) ---
   {
-    kategori: "Pemanfaatan Sampah",
+    kategori: "F. Pemanfaatan Sampah",
     items: [
       "Jenis Sampah yang dimanfaatkan kembali",
       "Jumlah Kemasan Botol Kaca/Beling (ton/bulan)",
@@ -79,7 +79,7 @@ const MASTER_CHECKLIST = [
 
   // --- KATEGORI 7: PEMBATASAN TIMBULAN SAMPAH (DIPISAH JADI KATEGORI BARU) ---
   {
-    kategori: "Pembatasan Timbulan Sampah",
+    kategori: "G. Pembatasan Timbulan Sampah",
     items: [
       "Larangan penggunaan bahan styrofoam serta bahan plastik sekali pakai (Lampirkan bukti dokumentasinya)",
       "Larangan penggunaan sedotan plastik (Lampirkan bukti dokumentasinya)",

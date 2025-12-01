@@ -44,7 +44,7 @@ export const CHECKLIST_ITEMS = [
   },
   // --- KATEGORI 5: CAPAIAN KINERJA ---
   {
-    kategori: "Capaian Kinerja Pengurangan Sampah Tahun 2025",
+    kategori: "E. Capaian Kinerja Pengurangan Sampah Tahun 2025",
     items: [
       "Usaha dan/atau kegiatan yang memiliki jumlah pekerja sama dengan atau lebih dari 1000 orang wajib memiliki sarana pengolah sampah organik (minimal komposter)"
     ]
@@ -52,7 +52,7 @@ export const CHECKLIST_ITEMS = [
 
   // --- KATEGORI 6: PEMANFAATAN SAMPAH (DIPISAH JADI KATEGORI BARU) ---
   {
-    kategori: "Pemanfaatan Sampah",
+    kategori: "F. Pemanfaatan Sampah",
     items: [
       "Jenis Sampah yang dimanfaatkan kembali",
       "Jumlah Kemasan Botol Kaca/Beling (ton/bulan)",
@@ -68,7 +68,7 @@ export const CHECKLIST_ITEMS = [
 
   // --- KATEGORI 7: PEMBATASAN TIMBULAN SAMPAH (DIPISAH JADI KATEGORI BARU) ---
   {
-    kategori: "Pembatasan Timbulan Sampah",
+    kategori: "G. Pembatasan Timbulan Sampah",
     items: [
       "Larangan penggunaan bahan styrofoam serta bahan plastik sekali pakai (Lampirkan bukti dokumentasinya)",
       "Larangan penggunaan sedotan plastik (Lampirkan bukti dokumentasinya)",
