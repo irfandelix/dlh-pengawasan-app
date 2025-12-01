@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 
 // --- KONSTANTA JUMLAH TOTAL PERTANYAAN ---
-const TOTAL_SOAL = 45;
+const TOTAL_SOAL = 45; 
 
 // --- KOMPONEN KECIL UNTUK TOMBOL DOWNLOAD ---
 function TombolDownloadPDF({ token }) {
@@ -17,7 +17,7 @@ function TombolDownloadPDF({ token }) {
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `Berita_Acara_${token}.pdf`;
+      a.download = `Berita_Acara_${token}.pdf`; 
       document.body.appendChild(a);
       a.click();
       a.remove();
@@ -112,19 +112,29 @@ export default function AdminDashboard() {
     window.location.href = '/'; 
   };
 
-  // --- FUNGSI HITUNG NILAI ---
+  // --- 3. FUNGSI HITUNG NILAI (LOGIKA BARU: BUKTI FOTO) ---
   const hitungNilai = (checklistArray) => {
     if (!checklistArray || checklistArray.length === 0) return 0;
-    const jumlahAda = checklistArray.filter(item => item.is_ada === true).length;
     
-    // Rumus: (Jumlah Jawaban "Ada" dibagi 45 Soal) dikali 100
-    const nilai = Math.round((jumlahAda / TOTAL_SOAL) * 100);
+    let totalPoin = 0;
+
+    checklistArray.forEach(item => {
+      // Jika dijawab "Ada"
+      if (item.is_ada === true) {
+        // Cek apakah ada foto buktinya?
+        if (item.bukti_foto && item.bukti_foto.length > 0) {
+          totalPoin += 1;   // Ada + Foto = 1 Poin
+        } else {
+          totalPoin += 0.5; // Ada + No Foto = 0.5 Poin
+        }
+      }
+    });
     
-    // Penjagaan biar nilainya gak lebih dari 100
+    const nilai = Math.round((totalPoin / TOTAL_SOAL) * 100);
     return nilai > 100 ? 100 : nilai;
   };
 
-  // --- FUNGSI LOGIKA WARNA & LABEL ---
+  // --- 4. FUNGSI LOGIKA WARNA & LABEL (Sesuai Gambar Kriteria) ---
   const getStatusNilai = (nilai) => {
     if (nilai >= 90) return { label: "SANGAT BAIK", style: "bg-green-100 text-green-700 border-green-200" };
     if (nilai >= 70) return { label: "BAIK", style: "bg-cyan-100 text-cyan-700 border-cyan-200" };
@@ -146,7 +156,6 @@ export default function AdminDashboard() {
           <div className="flex items-center gap-2">
             <h1 className="text-lg font-bold tracking-wide">Dashboard Admin LH</h1>
           </div>
-          
           <button 
             onClick={handleLogout}
             className="text-sm bg-green-900 px-3 py-1 rounded hover:bg-red-600 transition-colors"
@@ -218,7 +227,7 @@ export default function AdminDashboard() {
         <div className="md:col-span-2">
           <div className="bg-white/90 backdrop-blur-sm rounded-xl shadow-lg border border-white/50 overflow-hidden min-h-[500px]">
             <div className="p-5 border-b border-gray-100 bg-white/50 flex justify-between items-center">
-              <h2 className="font-bold text-gray-800 text-lg">Daftar Pengawasan</h2>
+              <h2 className="font-bold text-gray-800 text-lg">Daftar Token (MongoDB)</h2>
               <button onClick={fetchTokens} className="text-xs font-semibold text-green-700 bg-green-50 px-3 py-1.5 rounded-md hover:bg-green-100">
                 Refresh Data ⟳
               </button>
@@ -236,7 +245,6 @@ export default function AdminDashboard() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
-                  {/* ▼▼▼ PERBAIKAN DI SINI: Menggunakan { ... return (...) } ▼▼▼ */}
                   {tokens.map((item) => {
                     const nilai = hitungNilai(item.checklist);
                     const statusNilai = getStatusNilai(nilai);
