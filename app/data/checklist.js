@@ -42,13 +42,42 @@ export const CHECKLIST_ITEMS = [
       "Masa Simpan Limbah (Sesuai Izin)"
     ]
   },
+  // --- KATEGORI 5: CAPAIAN KINERJA ---
   {
-    kategori: "E. Pengelolaan Sampah",
+    kategori: "Capaian Kinerja Pengurangan Sampah Tahun 2025",
     items: [
-      "Pemilahan Sampah (Organik, Anorganik, B3)",
-      "Ketersediaan Tempat Sampah Terpilah",
-      "Larangan Penggunaan Styrofoam/Plastik Sekali Pakai",
-      "Bukti Kerjasama Pengangkutan Sampah Domestik"
+      "Usaha dan/atau kegiatan yang memiliki jumlah pekerja sama dengan atau lebih dari 1000 orang wajib memiliki sarana pengolah sampah organik (minimal komposter)"
+    ]
+  },
+
+  // --- KATEGORI 6: PEMANFAATAN SAMPAH (DIPISAH JADI KATEGORI BARU) ---
+  {
+    kategori: "Pemanfaatan Sampah",
+    items: [
+      "Jenis Sampah yang dimanfaatkan kembali",
+      "Jumlah Kemasan Botol Kaca/Beling (ton/bulan)",
+      "Jumlah Kemasan Botol PET (ton/bulan)",
+      "Jumlah Kemasan Botol Aluminium (ton/bulan)",
+      "Jumlah Kemasan Cat (ton/bulan)",
+      "Jumlah Ban (Mobil/Motor/Sepeda) (ton/bulan)",
+      "Jumlah Lain-Lain (ton/bulan)",
+      "Total Sampah yang Dimanfaatkan Kembali (ton/bulan)",
+      "Jumlah Sampah yang Dimanfaatkan Kembali (ton/tahun)"
+    ]
+  },
+
+  // --- KATEGORI 7: PEMBATASAN TIMBULAN SAMPAH (DIPISAH JADI KATEGORI BARU) ---
+  {
+    kategori: "Pembatasan Timbulan Sampah",
+    items: [
+      "Larangan penggunaan bahan styrofoam serta bahan plastik sekali pakai (Lampirkan bukti dokumentasinya)",
+      "Larangan penggunaan sedotan plastik (Lampirkan bukti dokumentasinya)",
+      "Himbauan penggunaan kantong wadah atau kemasan yang ramah lingkungan (Lampirkan bukti dokumentasinya)",
+      "Himbauan pemilahan sampah sekurang-kurangnya untuk tiga jenis sampah yaitu sampah organik (sisa makanan, sisa sayuran, daun, dll), plastik dan kertas (Lampirkan bukti dokumentasinya)",
+      "Mendaur ulang sampah plastik, dan kertas yang dapat didaur ulang (Lampirkan bukti dokumentasinya)",
+      "Menghidangkan makan minum dengan piring dan gelas (Lampirkan bukti dokumentasinya)",
+      "Jumlah Sampah yang dibatasi (ton/hari)",
+      "Jumlah Sampah yang dibatasi (ton/tahun)"
     ]
   }
 ];
