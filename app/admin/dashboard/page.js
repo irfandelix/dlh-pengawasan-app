@@ -1,6 +1,10 @@
 'use client';
 import { useState, useEffect } from 'react';
 
+// --- [BARU] DITAMBAHKAN DISINI ---
+// Konstanta ini ditaruh di luar supaya tidak dibuat ulang setiap kali layar refresh
+const TOTAL_SOAL = 45;
+
 // --- KOMPONEN KECIL UNTUK TOMBOL DOWNLOAD (Supaya loadingnya per tombol) ---
 function TombolDownloadPDF({ token }) {
   const [isLoading, setIsLoading] = useState(false);
@@ -125,6 +129,31 @@ export default function AdminDashboard() {
     window.location.href = '/'; 
   };
 
+  // --- [BARU] MASUKAN KODE INI SEBELUM "return" ---
+  
+  // 1. Fungsi Matematika (Menghitung Persen)
+  const hitungNilai = (checklistArray) => {
+    if (!checklistArray || checklistArray.length === 0) return 0;
+    const jumlahAda = checklistArray.filter(item => item.is_ada === true).length;
+    
+    // Rumus: (Jumlah Jawaban "Ada" dibagi 45 Soal) dikali 100
+    const nilai = Math.round((jumlahAda / TOTAL_SOAL) * 100);
+    
+    // Penjagaan biar nilainya gak lebih dari 100 (misal ada error data)
+    return nilai > 100 ? 100 : nilai;
+  };
+
+  // 2. Fungsi Logika Warna (Sesuai Gambar Kriteria)
+  const getStatusNilai = (nilai) => {
+    if (nilai >= 90) return { label: "SANGAT BAIK", style: "bg-green-100 text-green-700 border-green-200" };
+    if (nilai >= 70) return { label: "BAIK", style: "bg-cyan-100 text-cyan-700 border-cyan-200" };
+    if (nilai >= 50) return { label: "SEDANG", style: "bg-amber-100 text-amber-700 border-amber-200" };
+    if (nilai >= 25) return { label: "KURANG", style: "bg-red-100 text-red-700 border-red-200" };
+    return { label: "SANGAT KURANG", style: "bg-gray-800 text-white border-gray-600" };
+  };
+
+  // --- [AKHIR KODE BARU] ---
+
   return (
     // --- BACKGROUND IMAGE ---
     <div 
@@ -224,11 +253,17 @@ export default function AdminDashboard() {
                     <th className="px-6 py-4">Token</th>
                     <th className="px-6 py-4">Target</th>
                     <th className="px-6 py-4">Status</th>
+                    <th className="px-6 py-4 text-center">Kinerja</th>
                     <th className="px-6 py-4 text-right">Aksi</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
-                  {tokens.map((item) => (
+                  {tokens.map((item) => {
+
+                    // --- [BARU] Panggil fungsi yang kita buat di Bagian 2 tadi ---
+                    const nilai = hitungNilai(item.checklist);
+                    const statusNilai = getStatusNilai(nilai);
+
                     <tr key={item._id} className="hover:bg-white/80 transition-colors">
                       <td className="px-6 py-4">
                         <span className="font-mono font-bold text-green-700 bg-green-50 px-2 py-1 rounded border border-green-100">
@@ -241,12 +276,18 @@ export default function AdminDashboard() {
                           {item.kategori_target === 'FASYANKES' ? '🏥 Fasyankes' : '🏭 Industri'}
                         </div>
                       </td>
-                      <td className="px-6 py-4">
-                        <span className={`px-2 py-1 rounded-full text-xs font-bold ${
-                          item.status === 'SUBMITTED' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
-                        }`}>
-                          {item.status}
-                        </span>
+                      {/* --- [BARU] KOLOM NILAI --- */}
+                      <td className="px-6 py-4 text-center">
+                        {item.status === 'SUBMITTED' ? (
+                          // Tampilkan Kotak Nilai jika sudah Submit
+                          <div className={`inline-flex flex-col items-center justify-center px-3 py-1.5 rounded border shadow-sm ${statusNilai.style}`}>
+                            <span className="text-lg font-black leading-none">{nilai}</span>
+                            <span className="text-[9px] font-bold uppercase mt-0.5">{statusNilai.label}</span>
+                          </div>
+                        ) : (
+                          // Tampilkan strip (-) jika masih Draft
+                          <span className="text-gray-300 text-xl font-bold">-</span>
+                        )}
                       </td>
                       <td className="px-6 py-4 text-right flex justify-end gap-2">
                         <button 
@@ -262,7 +303,7 @@ export default function AdminDashboard() {
                         )}
                       </td>
                     </tr>
-                  ))}
+                  })}
                   {tokens.length === 0 && (
                      <tr><td colSpan="4" className="text-center p-8 text-gray-400">Database masih kosong...</td></tr>
                   )}
