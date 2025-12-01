@@ -39,6 +39,14 @@ const LaporanSchema = new mongoose.Schema({
     no_izin_sipa: String, // Input Text
     file_sipa: String,    // URL Upload
     
+    // ============================================
+    // ▼▼▼ TAMBAHAN KHUSUS FASYANKES (BARU) ▼▼▼
+    // ============================================
+    jumlah_tempat_tidur: String,      // Input Angka/Text
+    file_diagram: String,             // URL Upload Diagram Alir
+    media_pembuangan_air: String,     // Input Text
+    // ============================================
+
     // Produksi
     debit_air_harian: Number, // m3/hari
     jam_produksi_hari: Number,

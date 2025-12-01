@@ -471,10 +471,10 @@ function htmlContentBody(p, data, dataMap, sipaImgUrl, sipaIsPdf, activeChecklis
       <div class="section-title">III. DOKUMENTASI LAMPIRAN</div>
       
       ${sipaImgUrl ? `
-        <div style="margin-bottom: 20px;">
+        <div style="margin-bottom: 20px; page-break-inside: avoid;">
            <b>Dokumen SIPA:</b><br/>
-           <div class="photo-item">
-             <img src="${sipaImgUrl}" alt="SIPA" />
+           <div class="photo-item" style="width: 100%;">
+             <img src="${sipaImgUrl}" alt="SIPA" style="max-height: 400px; object-fit: contain;" />
              <div class="caption">Bukti Dokumen SIPA</div>
            </div>
         </div>
@@ -484,6 +484,16 @@ function htmlContentBody(p, data, dataMap, sipaImgUrl, sipaIsPdf, activeChecklis
         <div class="pdf-placeholder">
            <b>Dokumen SIPA (PDF)</b><br/>
            <i>Dokumen ini berupa file PDF dan telah dilampirkan secara utuh pada halaman paling akhir laporan ini.</i>
+        </div>
+      ` : ''}
+
+      ${p.file_diagram ? `
+        <div style="margin-bottom: 20px; page-break-inside: avoid;">
+           <b>Diagram Alir Proses & Limbah:</b><br/>
+           <div class="photo-item" style="width: 100%;">
+             <img src="${formatDriveImg(p.file_diagram)}" alt="Diagram Alir" style="max-height: 400px; object-fit: contain;" />
+             <div class="caption">Lampiran Diagram Alir</div>
+           </div>
         </div>
       ` : ''}
       

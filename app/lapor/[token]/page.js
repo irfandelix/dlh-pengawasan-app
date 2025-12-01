@@ -636,12 +636,14 @@ export default function FormLaporanPage() {
                       <div className="flex flex-col mt-2">
                         <label className="cursor-pointer bg-white border border-yellow-300 text-yellow-700 px-4 py-2 rounded hover:bg-yellow-100 text-sm font-medium text-center shadow-sm transition-all hover:shadow-md">
                            <span>{formData.profil.file_diagram ? "✅ Berkas Terupload (Ganti?)" : "📂 Upload Diagram Alir (PDF/Image)"}</span>
+                           {/* ▼▼▼ TEMPEL KODINGANMU DI SINI (GANTIKAN INPUT LAMA) ▼▼▼ */}
                            <input 
                              type="file" 
-                             accept="application/pdf,image/*"
+                             accept="image/png, image/jpeg, image/jpg" // Wajib gambar agar muncul di PDF
                              className="hidden"
                              onChange={(e) => handleFileUpload(e, 'DIAGRAM')} 
                            />
+                           {/* ▲▲▲ SAMPAI SINI ▲▲▲ */}
                         </label>
                         <p className="text-xs text-gray-400 mt-1 text-center">Maksimal 5MB</p>
                       </div>
