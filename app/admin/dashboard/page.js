@@ -218,7 +218,7 @@ export default function AdminDashboard() {
         <div className="md:col-span-2">
           <div className="bg-white/90 backdrop-blur-sm rounded-xl shadow-lg border border-white/50 overflow-hidden min-h-[500px]">
             <div className="p-5 border-b border-gray-100 bg-white/50 flex justify-between items-center">
-              <h2 className="font-bold text-gray-800 text-lg">Daftar Token (MongoDB)</h2>
+              <h2 className="font-bold text-gray-800 text-lg">Daftar Pengawasan</h2>
               <button onClick={fetchTokens} className="text-xs font-semibold text-green-700 bg-green-50 px-3 py-1.5 rounded-md hover:bg-green-100">
                 Refresh Data ⟳
               </button>
