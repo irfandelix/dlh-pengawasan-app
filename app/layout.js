@@ -14,10 +14,6 @@ const geistMono = Geist_Mono({
 export const metadata = {
   title: "Aplikasi Pengawasan LH",
   description: "Aplikasi Pengawasan Lingkungan Hidup Kabupaten Sragen",
-  // Opsional: Biar icon tab (favicon) berubah juga, pastikan file favicon.ico ada di folder /public
-  icons: {
-    icon: '/magnifying-glass.png', // Simpan file logo kecil di folder public
-  },
 };
 
 export default function RootLayout({ children }) {
