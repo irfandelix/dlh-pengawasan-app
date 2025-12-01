@@ -244,7 +244,7 @@ export default function AdminDashboard() {
                     return (
                       <tr key={item._id} className="hover:bg-white/80 transition-colors">
                         <td className="px-6 py-4">
-                          <span className="font-mono font-bold text-green-700 bg-green-50 px-2 py-1 rounded border border-green-100">
+                          <span className="font-mono font-bold text-green-700 bg-green-50 px-2 py-1 rounded border border-green-100 whitespace-nowrap">
                             {item.token}
                           </span>
                         </td>
