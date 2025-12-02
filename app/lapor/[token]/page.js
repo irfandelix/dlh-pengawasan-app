@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 
 // ==========================================
-// 1. DATA MASTER CHECKLIST: INDUSTRI
+// 1. DATA MASTER CHECKLIST: INDUSTRI (45 Soal)
 // ==========================================
 const MASTER_CHECKLIST_INDUSTRI = [
   {
@@ -90,8 +90,7 @@ const MASTER_CHECKLIST_INDUSTRI = [
 ];
 
 // ==========================================
-// DATA MASTER CHECKLIST: FASYANKES (SESUAI GAMBAR PDF)
-// Total: 39 Soal
+// 2. DATA MASTER CHECKLIST: FASYANKES (39 Soal)
 // ==========================================
 const MASTER_CHECKLIST_FASYANKES = [
   {

@@ -3,9 +3,7 @@ import { PDFDocument } from 'pdf-lib';
 import dbConnect from '@/lib/db';
 import Laporan from '@/models/Laporan';
 
-// ==========================================
-// 1. DATA MASTER CHECKLIST: INDUSTRI (45 Soal)
-// ==========================================
+// --- DATA MASTER CHECKLIST: INDUSTRI ---
 const MASTER_CHECKLIST_INDUSTRI = [
   {
     kategori: "Dokumen Lingkungan",
@@ -89,10 +87,7 @@ const MASTER_CHECKLIST_INDUSTRI = [
   }
 ];
 
-// ==========================================
-// DATA MASTER CHECKLIST: FASYANKES (SESUAI GAMBAR PDF)
-// Total: 39 Soal
-// ==========================================
+// --- DATA MASTER CHECKLIST: FASYANKES ---
 const MASTER_CHECKLIST_FASYANKES = [
   {
     kategori: "Dokumen Lingkungan",
@@ -165,6 +160,30 @@ const MASTER_CHECKLIST_FASYANKES = [
   }
 ];
 
+// --- HELPER FUNCTION: Convert Image URL to Base64 ---
+async function urlToBase64(url) {
+  try {
+    const response = await fetch(url);
+    if (!response.ok) throw new Error("Gagal fetch gambar");
+    const arrayBuffer = await response.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+    const contentType = response.headers.get('content-type') || 'image/jpeg';
+    return `data:${contentType};base64,${buffer.toString('base64')}`;
+  } catch (error) {
+    console.error("Gagal convert gambar:", error);
+    return null;
+  }
+}
+
+// --- HELPER FUNCTION: Format Link GDrive ---
+const formatDriveImg = (url) => {
+  if (!url) return null;
+  const idMatch = url.match(/\/d\/(.+?)\//);
+  if (idMatch && idMatch[1]) return `https://drive.google.com/uc?export=view&id=${idMatch[1]}`;
+  return url;
+};
+
+// --- MAIN API HANDLER ---
 export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url);
@@ -177,46 +196,11 @@ export async function GET(request) {
 
     if (!data) return NextResponse.json({ error: 'Data tidak ditemukan' }, { status: 404 });
 
-    // --- PILIH CHECKLIST BERDASARKAN KATEGORI ---
-    const activeChecklist = data.kategori_target === 'FASYANKES' 
-      ? MASTER_CHECKLIST_FASYANKES 
-      : MASTER_CHECKLIST_INDUSTRI;
-
-    // --- HELPERS ---
-    const formatDriveImg = (url) => {
-      if (!url) return null;
-      const idMatch = url.match(/\/d\/(.+?)\//);
-      if (idMatch && idMatch[1]) return `https://drive.google.com/uc?export=view&id=${idMatch[1]}`;
-      return url;
-    };
-
-    const p = data.profil || {};
+    // 1. Tentukan Checklist & Kategori
+    const isFasyankes = data.kategori_target === 'FASYANKES';
+    const activeChecklist = isFasyankes ? MASTER_CHECKLIST_FASYANKES : MASTER_CHECKLIST_INDUSTRI;
     
-    // --- LOGIC DETEKSI SIPA (PDF vs IMAGE) ---
-    let sipaIsPdf = false;
-    let sipaBuffer = null;
-    let sipaImgUrl = null;
-
-    if (p.file_sipa) {
-      const driveUrl = formatDriveImg(p.file_sipa);
-      try {
-        const res = await fetch(driveUrl);
-        const arrayBuffer = await res.arrayBuffer();
-        const buffer = Buffer.from(arrayBuffer);
-
-        if (buffer.toString('utf-8', 0, 4) === '%PDF') {
-          sipaIsPdf = true;
-          sipaBuffer = buffer; 
-        } else {
-          sipaImgUrl = driveUrl; 
-        }
-      } catch (e) {
-        console.error("Gagal fetch SIPA:", e);
-        sipaImgUrl = formatDriveImg(p.file_sipa);
-      }
-    }
-
-    // --- MAPPING DATA CHECKLIST ---
+    // Mapping Data Jawaban ke Map agar mudah dicari
     const dataMap = {};
     if (data.checklist && data.checklist.length > 0) {
       data.checklist.forEach(item => {
@@ -225,12 +209,62 @@ export async function GET(request) {
       });
     }
 
-    // --- HTML CONTENT ---
+    const p = data.profil || {};
+
+    // --- 2. PRE-PROCESS GAMBAR (CONVERT KE BASE64) ---
+    // Ini kunci agar gambar MUNCUL di PDF Vercel
+    
+    // A. SIPA
+    let sipaBase64 = null;
+    let sipaIsPdf = false;
+    let sipaBuffer = null;
+
+    if (p.file_sipa) {
+      const driveUrl = formatDriveImg(p.file_sipa);
+      try {
+        const res = await fetch(driveUrl);
+        const ab = await res.arrayBuffer();
+        const buffer = Buffer.from(ab);
+        
+        // Cek header file untuk tahu PDF atau Gambar
+        if (buffer.toString('utf-8', 0, 4) === '%PDF') {
+          sipaIsPdf = true;
+          sipaBuffer = buffer;
+        } else {
+          // Convert ke Base64 jika gambar
+          const contentType = res.headers.get('content-type') || 'image/jpeg';
+          sipaBase64 = `data:${contentType};base64,${buffer.toString('base64')}`;
+        }
+      } catch (e) {
+        console.error("Gagal proses SIPA:", e);
+      }
+    }
+
+    // B. DIAGRAM ALIR (Khusus Fasyankes)
+    let diagramBase64 = null;
+    if (isFasyankes && p.file_diagram) {
+       diagramBase64 = await urlToBase64(formatDriveImg(p.file_diagram));
+    }
+
+    // C. FOTO BUKTI LAPANGAN (Parallel Download)
+    const fotoChecklistMap = {};
+    await Promise.all(data.checklist.map(async (item) => {
+        if (item.bukti_foto && item.bukti_foto.length > 0) {
+            const url = formatDriveImg(item.bukti_foto[0]);
+            const base64 = await urlToBase64(url);
+            if (base64) {
+                const key = `${item.kategori}|${item.pertanyaan}`;
+                fotoChecklistMap[key] = base64;
+            }
+        }
+    }));
+
+    // --- 3. CONSTRUCT HTML ---
     const htmlContent = `
     <!DOCTYPE html>
     <html>
     <head>
-      <title>Berita Acara Pengawasan</title>
+      <title>Berita Acara</title>
       <style>
         @page { size: A4; margin: 1.5cm 2cm 3.5cm 2cm; }
         body { font-family: 'Times New Roman', serif; font-size: 11pt; color: #000; line-height: 1.2; }
@@ -248,16 +282,11 @@ export async function GET(request) {
         .col-val { width: 63%; }
         .nested-table { width: 100%; border-collapse: collapse; margin: 0; }
         .nested-table td { border: 1px solid #000; text-align: center; font-size: 10pt; padding: 4px; }
-        .nested-table tr:first-child td { border-top: none; }
-        .nested-table tr:last-child td { border-bottom: none; }
-        .nested-table td:first-child { border-left: none; }
-        .nested-table td:last-child { border-right: none; }
         .check-table { width: 100%; border: 1px solid #000; margin-top: 5px; font-size: 10pt; }
         .check-table th, .check-table td { border: 1px solid #000; padding: 4px; vertical-align: middle; }
         .check-table thead th { background-color: #ffffff; text-align: center; font-weight: bold; border-bottom: 2px solid #000; }
         .cat-row td { background-color: #f2f2f2; font-weight: bold; padding: 5px; border-top: 2px solid #000; border-bottom: 1px solid #000; }
         .check-center { text-align: center; font-size: 12pt; font-family: DejaVu Sans, sans-serif; }
-        .footer-signature { position: fixed; bottom: -2.5cm; left: 0; right: 0; height: 2.5cm; font-size: 7pt; font-weight: bold; background-color: white; z-index: 1000; }
         .photo-grid { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
         .photo-item { width: 48%; border: 1px solid #000; padding: 5px; text-align: center; page-break-inside: avoid; }
         .photo-item img { max-width: 100%; max-height: 200px; object-fit: contain; }
@@ -266,94 +295,6 @@ export async function GET(request) {
       </style>
     </head>
     <body>
-      ${htmlContentBody(p, data, dataMap, sipaImgUrl, sipaIsPdf, activeChecklist, formatDriveImg)}
-    </body>
-    </html>
-    `;
-
-    // --- FOOTER TANDA TANGAN ---
-    const footerTemplate = `
-      <div style="font-family: 'Times New Roman', serif; font-size: 8px; width: 100%; margin: 0 2cm; padding-bottom: 5px;">
-        <div style="border-top: 2px solid black; width: 100%; margin-bottom: 2px;"></div>
-        <div style="font-weight: bold; margin-bottom: 5px;">Mengetahui:</div>
-        <div style="display: flex; justify-content: space-between; width: 100%; font-weight: bold;">
-          <span>Petugas Perusahaan : (...........................................................................)</span>
-          <span>Tim Pengawas Penaatan LH : (...........................................................................)</span>
-        </div>
-      </div>
-    `;
-
-    // --- SETUP PUPPETEER HYBRID ---
-    let browser;
-    if (process.env.NODE_ENV === 'production') {
-      const chromium = await import('@sparticuz/chromium-min').then(mod => mod.default);
-      const puppeteerCore = await import('puppeteer-core').then(mod => mod.default);
-
-      chromium.setGraphicsMode = false;
-      const executablePath = await chromium.executablePath(
-        "https://github.com/Sparticuz/chromium/releases/download/v123.0.1/chromium-v123.0.1-pack.tar"
-      );
-
-      browser = await puppeteerCore.launch({
-        args: chromium.args,
-        defaultViewport: chromium.defaultViewport,
-        executablePath: executablePath,
-        headless: chromium.headless,
-      });
-
-    } else {
-      const puppeteer = await import('puppeteer').then(mod => mod.default);
-      browser = await puppeteer.launch({
-        headless: 'new',
-        args: ['--no-sandbox']
-      });
-    }
-    
-    const page = await browser.newPage();
-    await page.setContent(htmlContent, { waitUntil: 'networkidle0' });
-
-    const reportPdfBuffer = await page.pdf({
-      format: 'A4',
-      printBackground: true,
-      displayHeaderFooter: true,
-      headerTemplate: '<div></div>',
-      footerTemplate: footerTemplate,
-      margin: { top: '1.5cm', right: '2cm', bottom: '3.5cm', left: '2cm' }
-    });
-
-    await browser.close();
-
-    // --- MERGE PDF SIPA ---
-    let finalPdfBuffer = reportPdfBuffer;
-    if (sipaIsPdf && sipaBuffer) {
-      const reportPdfDoc = await PDFDocument.load(reportPdfBuffer);
-      const sipaPdfDoc = await PDFDocument.load(sipaBuffer);
-      const sipaPages = await reportPdfDoc.copyPages(sipaPdfDoc, sipaPdfDoc.getPageIndices());
-      sipaPages.forEach((page) => reportPdfDoc.addPage(page));
-      finalPdfBuffer = await reportPdfDoc.save(); 
-    }
-
-    const bufferToSend = Buffer.from(finalPdfBuffer);
-    return new NextResponse(bufferToSend, {
-      status: 200,
-      headers: {
-        'Content-Type': 'application/pdf',
-        'Content-Disposition': `attachment; filename="Berita_Acara_${data.token}.pdf"`,
-      },
-    });
-
-  } catch (error) {
-    console.error("PDF Error:", error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  }
-}
-
-// --- HELPER FUNCTION HTML BODY ---
-function htmlContentBody(p, data, dataMap, sipaImgUrl, sipaIsPdf, activeChecklist, formatDriveImg) {
-    // Cek apakah ini Fasyankes untuk menampilkan "Jumlah Tempat Tidur"
-    const isFasyankes = data.kategori_target === 'FASYANKES';
-
-    return `
       <div class="top-right-label">1 Lampiran Berita Acara</div>
       <div class="doc-title">Lampiran Berita Acara Pengawasan Penaatan Lingkungan Hidup Daerah Kab. Sragen</div>
       <div class="doc-year">Tahun 2025</div>
@@ -414,9 +355,14 @@ function htmlContentBody(p, data, dataMap, sipaImgUrl, sipaIsPdf, activeChecklis
         <tr><td class="col-label">Merek Dagang</td><td class="col-sep">:</td><td class="col-val">${p.merek_dagang || ''}</td></tr>
         ` : ''}
         
+        ${isFasyankes ? `
+        <tr><td class="col-label">Media Tempat Pembuangan Air Limbah</td><td class="col-sep">:</td><td class="col-val">${p.media_pembuangan_air || ''}</td></tr>
+        ` : `
         <tr><td class="col-label">Bahan Bakar Yang Digunakan</td><td class="col-sep">:</td><td class="col-val">${p.bahan_bakar || ''}</td></tr>
         <tr><td class="col-label">Satuan Bahan Bakar</td><td class="col-sep">:</td><td class="col-val">${p.satuan_bahan_bakar || ''}</td></tr>
         <tr><td class="col-label">Jumlah Konsumsi Bahan Bakar/th</td><td class="col-sep">:</td><td class="col-val">${p.konsumsi_bb_tahun || ''}</td></tr>
+        `}
+
         <tr><td class="col-label">Sistem Manajemen Lingkungan</td><td class="col-sep">:</td><td class="col-val">${p.sistem_manajemen_lingkungan || ''}</td></tr>
         <tr><td class="col-label">Dokumen Lingkungan</td><td class="col-sep">:</td><td class="col-val">${p.dokumen_lingkungan || ''}</td></tr>
         <tr><td class="col-label">Inspeksi Terakhir</td><td class="col-sep">:</td><td class="col-val">${p.tgl_inspeksi_terakhir || p.inspeksi_terakhir ? new Date(p.tgl_inspeksi_terakhir || p.inspeksi_terakhir).toLocaleDateString('id-ID') : ''}</td></tr>
@@ -470,11 +416,11 @@ function htmlContentBody(p, data, dataMap, sipaImgUrl, sipaIsPdf, activeChecklis
 
       <div class="section-title">III. DOKUMENTASI LAMPIRAN</div>
       
-      ${sipaImgUrl ? `
+      ${sipaBase64 ? `
         <div style="margin-bottom: 20px; page-break-inside: avoid;">
            <b>Dokumen SIPA:</b><br/>
            <div class="photo-item" style="width: 100%;">
-             <img src="${sipaImgUrl}" alt="SIPA" style="max-height: 400px; object-fit: contain;" />
+             <img src="${sipaBase64}" alt="SIPA" style="max-height: 400px; object-fit: contain;" />
              <div class="caption">Bukti Dokumen SIPA</div>
            </div>
         </div>
@@ -487,11 +433,11 @@ function htmlContentBody(p, data, dataMap, sipaImgUrl, sipaIsPdf, activeChecklis
         </div>
       ` : ''}
 
-      ${p.file_diagram ? `
+      ${diagramBase64 ? `
         <div style="margin-bottom: 20px; page-break-inside: avoid;">
-           <b>Diagram Alir Proses & Limbah:</b><br/>
+           <b>Diagram Alir Proses:</b><br/>
            <div class="photo-item" style="width: 100%;">
-             <img src="${formatDriveImg(p.file_diagram)}" alt="Diagram Alir" style="max-height: 400px; object-fit: contain;" />
+             <img src="${diagramBase64}" alt="Diagram" style="max-height: 400px; object-fit: contain;" />
              <div class="caption">Lampiran Diagram Alir</div>
            </div>
         </div>
@@ -499,11 +445,13 @@ function htmlContentBody(p, data, dataMap, sipaImgUrl, sipaIsPdf, activeChecklis
       
       <div class="photo-grid">
         ${data.checklist.map(item => {
-           if(item.bukti_foto && item.bukti_foto.length > 0) {
-             const imgUrl = formatDriveImg(item.bukti_foto[0]);
+           const key = `${item.kategori}|${item.pertanyaan}`;
+           const imgBase64 = fotoChecklistMap[key]; // Panggil dari Map Base64
+
+           if(imgBase64) {
              return `
                <div class="photo-item">
-                 <img src="${imgUrl}" alt="Bukti" />
+                 <img src="${imgBase64}" alt="Bukti" />
                  <div class="caption">Bukti: ${item.pertanyaan}</div>
                </div>
              `;
@@ -511,5 +459,84 @@ function htmlContentBody(p, data, dataMap, sipaImgUrl, sipaIsPdf, activeChecklis
            return '';
         }).join('')}
       </div>
+
+    </body>
+    </html>
     `;
+
+    // --- FOOTER TANDA TANGAN ---
+    const footerTemplate = `
+      <div style="font-family: 'Times New Roman', serif; font-size: 8px; width: 100%; margin: 0 2cm; padding-bottom: 5px;">
+        <div style="border-top: 2px solid black; width: 100%; margin-bottom: 2px;"></div>
+        <div style="font-weight: bold; margin-bottom: 5px;">Mengetahui:</div>
+        <div style="display: flex; justify-content: space-between; width: 100%; font-weight: bold;">
+          <span>Petugas Perusahaan : (...........................................................................)</span>
+          <span>Tim Pengawas Penaatan LH : (...........................................................................)</span>
+        </div>
+      </div>
+    `;
+
+    // --- SETUP PUPPETEER ---
+    let browser;
+    if (process.env.NODE_ENV === 'production') {
+      const chromium = await import('@sparticuz/chromium-min').then(mod => mod.default);
+      const puppeteerCore = await import('puppeteer-core').then(mod => mod.default);
+
+      chromium.setGraphicsMode = false;
+      const executablePath = await chromium.executablePath(
+        "https://github.com/Sparticuz/chromium/releases/download/v123.0.1/chromium-v123.0.1-pack.tar"
+      );
+
+      browser = await puppeteerCore.launch({
+        args: chromium.args,
+        defaultViewport: chromium.defaultViewport,
+        executablePath: executablePath,
+        headless: chromium.headless,
+      });
+
+    } else {
+      const puppeteer = await import('puppeteer').then(mod => mod.default);
+      browser = await puppeteer.launch({
+        headless: 'new',
+        args: ['--no-sandbox']
+      });
+    }
+    
+    const page = await browser.newPage();
+    await page.setContent(htmlContent, { waitUntil: 'networkidle0' });
+
+    const reportPdfBuffer = await page.pdf({
+      format: 'A4',
+      printBackground: true,
+      displayHeaderFooter: true,
+      headerTemplate: '<div></div>',
+      footerTemplate: footerTemplate,
+      margin: { top: '1.5cm', right: '2cm', bottom: '3.5cm', left: '2cm' }
+    });
+
+    await browser.close();
+
+    // --- MERGE PDF SIPA (JIKA PDF) ---
+    let finalPdfBuffer = reportPdfBuffer;
+    if (sipaIsPdf && sipaBuffer) {
+      const reportPdfDoc = await PDFDocument.load(reportPdfBuffer);
+      const sipaPdfDoc = await PDFDocument.load(sipaBuffer);
+      const sipaPages = await reportPdfDoc.copyPages(sipaPdfDoc, sipaPdfDoc.getPageIndices());
+      sipaPages.forEach((page) => reportPdfDoc.addPage(page));
+      finalPdfBuffer = await reportPdfDoc.save(); 
+    }
+
+    const bufferToSend = Buffer.from(finalPdfBuffer);
+    return new NextResponse(bufferToSend, {
+      status: 200,
+      headers: {
+        'Content-Type': 'application/pdf',
+        'Content-Disposition': `attachment; filename="Berita_Acara_${data.token}.pdf"`,
+      },
+    });
+
+  } catch (error) {
+    console.error("PDF Error:", error);
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
 }
