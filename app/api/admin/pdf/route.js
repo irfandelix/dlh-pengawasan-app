@@ -436,7 +436,7 @@ export async function GET(request) {
 
       <div class="section-title">II. RINGKASAN TEMUAN LAPANGAN</div>
 
-<table class="check-table">
+      <table class="check-table">
         <thead>
           <tr>
             <th width="40%">Aspek Yang Diawasi</th>
@@ -445,42 +445,55 @@ export async function GET(request) {
             <th width="44%">Keterangan</th>
           </tr>
         </thead>
-        <tbody>
-          ${activeChecklist.map(category => {
-            const listItems = category.items.map(pertanyaan => {
-              const key = `${category.kategori}|${pertanyaan}`;
-              const dataItem = dataMap[key]; 
+          <tbody>
+            ${activeChecklist.map(category => {
+              const listItems = category.items.map(pertanyaan => {
+                const key = `${category.kategori}|${pertanyaan}`;
+                const dataItem = dataMap[key]; 
 
-              const val = dataItem ? String(dataItem.is_ada) : "null";
-              const isCentangAda = val === "true" || val === "1";
-              const isCentangTidak = val === "false" || val === "0";
+                // --- LOGIKA SAKTI V2 (DISEMPURNAKAN) ---
+                // Kita pastikan dulu datanya ADA sebelum dicek isinya
+                
+                let isCentangAda = false;
+                let isCentangTidak = false;
+
+                if (dataItem && dataItem.is_ada !== undefined && dataItem.is_ada !== null) {
+                    // Konversi ke String agar aman (menangani true, "true", 1, "1")
+                    const valStr = String(dataItem.is_ada);
+                    
+                    if (valStr === "true" || valStr === "1") {
+                        isCentangAda = true;
+                    } else if (valStr === "false" || valStr === "0") {
+                        isCentangTidak = true;
+                    }
+                }
+
+                return `
+                <tr>
+                  <td style="padding-left: 10px;">${pertanyaan}</td>
+                  
+                  <td class="check-center border" style="font-family: DejaVu Sans, sans-serif; font-size: 14pt; font-weight: bold;">
+                    ${isCentangAda ? 'V' : ''}
+                  </td>
+                  
+                  <td class="check-center border" style="font-family: DejaVu Sans, sans-serif; font-size: 14pt; font-weight: bold;">
+                    ${isCentangTidak ? 'V' : ''}
+                  </td>
+                  
+                  <td class="border">${dataItem?.keterangan || ''}</td>
+                </tr>
+                `;
+              }).join('');
 
               return `
-              <tr>
-                <td style="padding-left: 10px;">${pertanyaan}</td>
-                
-                <td class="check-center border" style="font-weight: bold; font-size: 12pt;">
-                   ${isCentangAda ? 'V' : ''}
-                </td>
-                
-                <td class="check-center border" style="font-weight: bold; font-size: 12pt;">
-                   ${isCentangTidak ? 'V' : ''}
-                </td>
-                
-                <td class="border">${dataItem?.keterangan || ''}</td>
-              </tr>
+                <tr class="cat-row">
+                  <td colspan="4">${category.kategori}</td>
+                </tr>
+                ${listItems}
               `;
-            }).join('');
-
-            return `
-              <tr class="cat-row">
-                <td colspan="4">${category.kategori}</td>
-              </tr>
-              ${listItems}
-            `;
-          }).join('')}
-        </tbody>
-      </table>
+            }).join('')}
+          </tbody>
+        </table>
 
       <div style="page-break-before: always;"></div>
 
