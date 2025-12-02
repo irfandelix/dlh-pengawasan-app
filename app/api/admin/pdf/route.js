@@ -265,9 +265,94 @@ export async function GET(request) {
         return p[key1] || p[key2] || '';
     };
 
+// --- 3. CONSTRUCT HTML (PERBAIKAN CSS GARIS TABEL) ---
     const htmlContent = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <title>Berita Acara</title>
+      <style>
+        @page { size: A4; margin: 1.5cm 2cm 3.5cm 2cm; }
+        body { font-family: 'Times New Roman', serif; font-size: 11pt; color: #000; line-height: 1.2; }
+        
+        /* JUDUL */
+        .top-right-label { font-size: 10pt; margin-bottom: 20px; text-align: right; }
+        .doc-title { text-align: center; margin-bottom: 5px; font-size: 12pt; font-weight: bold; }
+        .doc-year { text-align: center; margin-bottom: 20px; font-size: 12pt; font-weight: bold; }
+        .section-title { font-weight: bold; margin-top: 10px; margin-bottom: 5px; text-transform: uppercase; }
+
+        /* SETTING TABEL GLOBAL - AGAR GARIS MENYATU */
+        table { 
+            width: 100%; 
+            border-collapse: collapse !important; /* WAJIB ADA */
+            margin-bottom: 10px;
+        }
+        td, th { vertical-align: top; padding: 4px; }
+        tr { page-break-inside: avoid; }
+
+        /* TABEL PROFIL */
+        .main-table { border: 2px solid #000; }
+        .main-table td { border: 1px solid #000 !important; } /* Paksa garis muncul */
+        .col-label { width: 35%; }
+        .col-sep { width: 2%; text-align: center; }
+        .col-val { width: 63%; }
+
+        /* TABEL NESTED (KAPASITAS) */
+        .nested-table { width: 100%; margin: 0; border: none; }
+        .nested-table td { border: 1px solid #000 !important; text-align: center; font-size: 10pt; }
+
+        /* --- [INI YANG KAMU CARI: KOTAK TABEL CHECKLIST] --- */
+        .check-table { 
+            width: 100%; 
+            border: 2px solid #000 !important; /* Bingkai Luar Tebal */
+            margin-top: 5px; 
+            font-size: 10pt; 
+        }
+        .check-table th { 
+            border: 1px solid #000 !important; /* Garis Header */
+            background-color: #e0e0e0 !important; /* Warna Abu-abu Cetak */
+            -webkit-print-color-adjust: exact; /* Paksa warna background ter-print */
+            text-align: center; 
+            font-weight: bold; 
+            padding: 8px;
+        }
+        .check-table td { 
+            border: 1px solid #000 !important; /* Garis Sel Hitam */
+            padding: 5px; 
+            vertical-align: middle; 
+        }
+        
+        /* WARNA HEADER KATEGORI */
+        .cat-row td { 
+            background-color: #f0f0f0 !important; 
+            -webkit-print-color-adjust: exact;
+            font-weight: bold; 
+            padding: 6px; 
+            border: 1px solid #000 !important; 
+        }
+        
+        /* AGAR CENTANG PAS DI TENGAH */
+        .check-center { 
+            text-align: center; 
+            font-family: DejaVu Sans, sans-serif; 
+            font-size: 14pt;
+            width: 50px; /* Lebar fix untuk kolom centang */
+        }
+        
+        /* LAINNYA */
+        .footer-signature { position: fixed; bottom: -2.5cm; left: 0; right: 0; height: 2.5cm; font-size: 8pt; font-weight: bold; z-index: 1000; }
+        .photo-grid { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
+        .photo-item { width: 48%; border: 1px solid #000; padding: 5px; text-align: center; page-break-inside: avoid; }
+        .photo-item img { max-width: 100%; max-height: 200px; object-fit: contain; }
+        .caption { font-size: 9pt; font-style: italic; margin-top: 5px; }
+        .pdf-placeholder { width: 98%; border: 1px dashed #000; padding: 15px; text-align: center; background: #f9f9f9; margin-bottom: 10px; }
+      </style>
+    </head>
+    <body>
     
-    // ... (kode HTML Head tetap sama) ...
+      <div class="top-right-label">1 Lampiran Berita Acara</div>
+      <div class="doc-title">Lampiran Berita Acara Pengawasan Penaatan Lingkungan Hidup Daerah Kab. Sragen</div>
+      <div class="doc-year">Tahun 2025</div>
 
       <div class="section-title">I. PROFIL JENIS USAHA DAN/ATAU KEGIATAN</div>
 
@@ -279,11 +364,15 @@ export async function GET(request) {
         <tr><td class="col-label">Holding Company</td><td class="col-sep">:</td><td class="col-val">${val('holding_company')}</td></tr>
         <tr><td class="col-label">Tahun Berdiri/beroperasi</td><td class="col-sep">:</td><td class="col-val">${val('tahun_operasi')}</td></tr>
         <tr><td class="col-label">Status Permodalan</td><td class="col-sep">:</td><td class="col-val">${val('status_permodalan')}</td></tr>
+        
         <tr><td class="col-label">Luas Area Usaha</td><td class="col-sep">:</td><td class="col-val">${val('luas_area')} (m²)</td></tr>
         <tr><td class="col-label">Luas Bangunan Usaha</td><td class="col-sep">:</td><td class="col-val">${val('luas_bangunan')} (m²)</td></tr>
+        
         <tr><td class="col-label">Lokasi Pembuangan Air Limbah</td><td class="col-sep">:</td><td class="col-val">${val('lokasi_buang_limbah')}</td></tr>
         <tr><td class="col-label">Pemanfaatan Kembali Air Limbah</td><td class="col-sep">:</td><td class="col-val">${val('pemanfaatan_air')}</td></tr>
+        
         <tr><td class="col-label">Surat Izin SIPA (Lampirkan)</td><td class="col-sep">:</td><td class="col-val">${val('no_sipa') || 'Tidak Ada'}</td></tr>
+        
         <tr><td class="col-label">Jumlah Penggunaan Air (m³/hari)</td><td class="col-sep">:</td><td class="col-val">${val('penggunaan_air')} (M³/hari)</td></tr>
         <tr><td class="col-label">Jumlah Jam Produksi / Hari</td><td class="col-sep">:</td><td class="col-val">${val('jam_produksi')} (Jam)</td></tr>
         <tr><td class="col-label">Jumlah Hari Kerja / Minggu</td><td class="col-sep">:</td><td class="col-val">${val('hari_kerja_minggu')} (hari/minggu)</td></tr>
@@ -347,7 +436,7 @@ export async function GET(request) {
 
       <div class="section-title">II. RINGKASAN TEMUAN LAPANGAN</div>
 
-<table class="check-table">
+      <table class="check-table">
         <thead>
           <tr>
             <th width="40%">Aspek Yang Diawasi</th>
@@ -362,13 +451,10 @@ export async function GET(request) {
               const key = `${category.kategori}|${pertanyaan}`;
               const dataItem = dataMap[key]; 
 
-              // --- LOGIKA SAKTI PERBAIKAN CENTANG ---
-              // Kita paksa konversi ke string dulu, baru cek isinya.
-              // Ini akan menangkap: true (boolean), "true" (string), "on", 1, dll.
-              
-              const val = dataItem ? String(dataItem.is_ada) : "false";
+              // LOGIKA SAKTI CENTANG
+              const val = dataItem ? String(dataItem.is_ada) : "null";
               const isCentangAda = val === "true";
-              const isCentangTidak = val === "false" && dataItem; // Cuma centang 'Tidak' kalau dataItem ada (bukan undefined)
+              const isCentangTidak = val === "false";
 
               return `
               <tr>
