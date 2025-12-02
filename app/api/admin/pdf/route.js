@@ -446,15 +446,20 @@ export async function GET(request) {
           </tr>
         </thead>
         <tbody>
-          ${activeChecklist.map(category => {
+          $${activeChecklist.map(category => {
             const listItems = category.items.map(pertanyaan => {
               const key = `${category.kategori}|${pertanyaan}`;
               const dataItem = dataMap[key]; 
 
-              // LOGIKA SAKTI CENTANG
-              const val = dataItem ? String(dataItem.is_ada) : "null";
-              const isCentangAda = val === "true";
-              const isCentangTidak = val === "false";
+              // --- LOGIKA SAKTI (DIPASANG LAGI AGAR CENTANG MUNCUL) ---
+              // 1. Ambil nilai is_ada, ubah ke String agar aman
+              const rawValue = dataItem ? String(dataItem.is_ada) : "null";
+              
+              // 2. Cek apakah nilainya "true" (string) atau "1" atau true (boolean)
+              const isCentangAda = rawValue === "true" || rawValue === "1";
+              
+              // 3. Cek apakah nilainya "false" (string) atau "0" atau false (boolean)
+              const isCentangTidak = rawValue === "false" || rawValue === "0";
 
               return `
               <tr>
