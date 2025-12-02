@@ -451,22 +451,17 @@ export async function GET(request) {
                 const key = `${category.kategori}|${pertanyaan}`;
                 const dataItem = dataMap[key]; 
 
-                // --- LOGIKA SAKTI V2 (DISEMPURNAKAN) ---
-                // Kita pastikan dulu datanya ADA sebelum dicek isinya
-                
-                let isCentangAda = false;
-                let isCentangTidak = false;
+                // --- LOGIKA BARU: DEFAULT TIDAK ---
+              
+              // 1. Ambil nilai. Jika dataItem tidak ada (belum diisi), anggap "false"
+              const rawValue = (dataItem && dataItem.is_ada !== undefined) ? String(dataItem.is_ada) : "false";
 
-                if (dataItem && dataItem.is_ada !== undefined && dataItem.is_ada !== null) {
-                    // Konversi ke String agar aman (menangani true, "true", 1, "1")
-                    const valStr = String(dataItem.is_ada);
-                    
-                    if (valStr === "true" || valStr === "1") {
-                        isCentangAda = true;
-                    } else if (valStr === "false" || valStr === "0") {
-                        isCentangTidak = true;
-                    }
-                }
+              // 2. Cek apakah "Ada"
+              const isCentangAda = rawValue === "true" || rawValue === "1";
+              
+              // 3. Sisa-nya pasti "Tidak" (Karena pilihannya cuma 1 checkbox)
+              // Jadi kalau tidak dicentang, otomatis masuk ke kolom Tidak.
+              const isCentangTidak = !isCentangAda;
 
                 return `
                 <tr>
