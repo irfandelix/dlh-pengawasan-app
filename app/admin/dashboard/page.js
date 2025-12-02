@@ -248,19 +248,28 @@ export default function AdminDashboard() {
                           </span>
                         </td>
                         
-                        {/* KOLOM KINERJA (DIPERBAIKI AGAR UKURAN TETAP) */}
+                        {/* KOLOM KINERJA (MODIFIKASI: KOTAK PERSEGI) */}
                         <td className="px-6 py-4">
                           <div className="flex justify-center">
                             {item.status === 'SUBMITTED' ? (
-                              // Tambahkan class 'w-32' (lebar tetap) dan 'h-12' (tinggi tetap)
-                              <div className={`w-32 h-12 flex flex-col items-center justify-center rounded border shadow-sm ${statusNilai.style}`}>
-                                <span className="text-lg font-black leading-none">{nilai}</span>
-                                <span className="text-[9px] font-bold uppercase mt-0.5">{statusNilai.label}</span>
+                              // UBAH UKURAN DISINI: w-20 h-20 (80x80px) agar jadi KOTAK
+                              <div className={`w-20 h-20 flex flex-col items-center justify-center rounded-xl border-2 shadow-md transition-transform hover:scale-110 ${statusNilai.style}`}>
+                                
+                                {/* Angka Nilai (Diperbesar) */}
+                                <span className="text-3xl font-black leading-none tracking-tighter">
+                                  {nilai}
+                                </span>
+                                
+                                {/* Label Keterangan (Diperkecil & Wrap text) */}
+                                <span className="text-[8px] font-bold uppercase mt-1 text-center leading-3 px-1">
+                                  {statusNilai.label}
+                                </span>
+                                
                               </div>
                             ) : (
-                              // Draft juga dikasih wadah ukuran sama biar sejajar
-                              <div className="w-32 h-12 flex items-center justify-center">
-                                <span className="text-gray-300 text-2xl font-bold">-</span>
+                              // Placeholder untuk Draft (Kotak Abu-abu Kosong)
+                              <div className="w-20 h-20 flex items-center justify-center bg-gray-50 rounded-xl border-2 border-dashed border-gray-200">
+                                <span className="text-gray-300 text-3xl font-bold">-</span>
                               </div>
                             )}
                           </div>
