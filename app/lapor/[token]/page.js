@@ -171,6 +171,7 @@ export default function FormLaporanPage() {
 
   const [activeTab, setActiveTab] = useState(1);
   const [loading, setLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false); // <--- TAMBAHKAN BARIS INI
   const [activeChecklist, setActiveChecklist] = useState([]); // State untuk menyimpan List Pertanyaan
   
   const [formData, setFormData] = useState({
