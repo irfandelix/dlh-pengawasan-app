@@ -248,16 +248,22 @@ export default function AdminDashboard() {
                           </span>
                         </td>
                         
-                        {/* KOLOM KINERJA */}
-                        <td className="px-6 py-4 text-center">
-                          {item.status === 'SUBMITTED' ? (
-                            <div className={`inline-flex flex-col items-center justify-center px-3 py-1.5 rounded border shadow-sm ${statusNilai.style}`}>
-                              <span className="text-lg font-black leading-none">{nilai}</span>
-                              <span className="text-[9px] font-bold uppercase mt-0.5">{statusNilai.label}</span>
-                            </div>
-                          ) : (
-                            <span className="text-gray-300 text-xl font-bold">-</span>
-                          )}
+                        {/* KOLOM KINERJA (DIPERBAIKI AGAR UKURAN TETAP) */}
+                        <td className="px-6 py-4">
+                          <div className="flex justify-center">
+                            {item.status === 'SUBMITTED' ? (
+                              // Tambahkan class 'w-32' (lebar tetap) dan 'h-12' (tinggi tetap)
+                              <div className={`w-32 h-12 flex flex-col items-center justify-center rounded border shadow-sm ${statusNilai.style}`}>
+                                <span className="text-lg font-black leading-none">{nilai}</span>
+                                <span className="text-[9px] font-bold uppercase mt-0.5">{statusNilai.label}</span>
+                              </div>
+                            ) : (
+                              // Draft juga dikasih wadah ukuran sama biar sejajar
+                              <div className="w-32 h-12 flex items-center justify-center">
+                                <span className="text-gray-300 text-2xl font-bold">-</span>
+                              </div>
+                            )}
+                          </div>
                         </td>
 
                         <td className="px-6 py-4 text-right flex justify-end gap-2">
