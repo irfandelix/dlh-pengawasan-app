@@ -436,7 +436,7 @@ export async function GET(request) {
 
       <div class="section-title">II. RINGKASAN TEMUAN LAPANGAN</div>
 
-      <table class="check-table">
+<table class="check-table">
         <thead>
           <tr>
             <th width="40%">Aspek Yang Diawasi</th>
@@ -446,31 +446,25 @@ export async function GET(request) {
           </tr>
         </thead>
         <tbody>
-          $${activeChecklist.map(category => {
+          ${activeChecklist.map(category => {
             const listItems = category.items.map(pertanyaan => {
               const key = `${category.kategori}|${pertanyaan}`;
               const dataItem = dataMap[key]; 
 
-              // --- LOGIKA SAKTI (DIPASANG LAGI AGAR CENTANG MUNCUL) ---
-              // 1. Ambil nilai is_ada, ubah ke String agar aman
-              const rawValue = dataItem ? String(dataItem.is_ada) : "null";
-              
-              // 2. Cek apakah nilainya "true" (string) atau "1" atau true (boolean)
-              const isCentangAda = rawValue === "true" || rawValue === "1";
-              
-              // 3. Cek apakah nilainya "false" (string) atau "0" atau false (boolean)
-              const isCentangTidak = rawValue === "false" || rawValue === "0";
+              const val = dataItem ? String(dataItem.is_ada) : "null";
+              const isCentangAda = val === "true" || val === "1";
+              const isCentangTidak = val === "false" || val === "0";
 
               return `
               <tr>
                 <td style="padding-left: 10px;">${pertanyaan}</td>
                 
-                <td class="check-center border" style="font-family: DejaVu Sans, sans-serif; font-size: 14pt;">
-                   ${isCentangAda ? '✔' : ''}
+                <td class="check-center border" style="font-weight: bold; font-size: 12pt;">
+                   ${isCentangAda ? 'V' : ''}
                 </td>
                 
-                <td class="check-center border" style="font-family: DejaVu Sans, sans-serif; font-size: 14pt;">
-                   ${isCentangTidak ? '✔' : ''}
+                <td class="check-center border" style="font-weight: bold; font-size: 12pt;">
+                   ${isCentangTidak ? 'V' : ''}
                 </td>
                 
                 <td class="border">${dataItem?.keterangan || ''}</td>
