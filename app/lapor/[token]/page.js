@@ -513,8 +513,8 @@ export default function FormLaporanPage() {
                     <input type="number" name="penggunaan_air" value={formData.profil.penggunaan_air || ''} onChange={handleProfilChange} className="input-field" step="0.01" />
                   </div>
                   <div>
-                    <label className="label-text">Jam Produksi / Hari</label>
-                    <input type="number" name="jam_produksi" value={formData.profil.jam_produksi || ''} onChange={handleProfilChange} className="input-field" />
+                    <label className="label-text">Jam Kerja / Hari</label>
+                    <input type="number" name="jam_kerja" value={formData.profil.jam_kerja || ''} onChange={handleProfilChange} className="input-field" />
                   </div>
                   <div>
                     <label className="label-text">Hari Kerja / Minggu</label>
