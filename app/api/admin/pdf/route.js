@@ -341,9 +341,31 @@ export async function GET(request) {
         
         /* LAINNYA */
         .footer-signature { position: fixed; bottom: -2.5cm; left: 0; right: 0; height: 2.5cm; font-size: 8pt; font-weight: bold; z-index: 1000; }
-        .photo-grid { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
-        .photo-item { width: 48%; border: 1px solid #000; padding: 5px; text-align: center; page-break-inside: avoid; }
-        .photo-item img { max-width: 100%; max-height: 200px; object-fit: contain; }
+        /* TAMPILAN GRID FOTO (2 KOLOM) */
+        .photo-grid { 
+            display: flex; 
+            flex-wrap: wrap; 
+            gap: 10px; 
+            margin-top: 10px; 
+            justify-content: flex-start; /* Rata kiri */
+        }
+        
+        .photo-item { 
+            /* Lebar 48% agar muat 2 kotak (sisa 4% buat gap/margin) */
+            width: 48%; 
+            border: 1px solid #000; 
+            padding: 5px; 
+            text-align: center; 
+            page-break-inside: avoid; /* Jangan potong kotak di tengah */
+            margin-bottom: 10px;
+            box-sizing: border-box;
+        }
+
+        .photo-item img { 
+            width: 100%; /* Lebar gambar ngikutin kotak */
+            height: 200px; /* Tinggi fix agar sejajar */
+            object-fit: contain; /* Gambar tidak gepeng */
+        }
         .caption { font-size: 9pt; font-style: italic; margin-top: 5px; }
         .pdf-placeholder { width: 98%; border: 1px dashed #000; padding: 15px; text-align: center; background: #f9f9f9; margin-bottom: 10px; }
       </style>
