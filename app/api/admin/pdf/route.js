@@ -259,70 +259,40 @@ export async function GET(request) {
         }
     }));
 
-    // --- 3. CONSTRUCT HTML ---
+// --- HELPER UNTUK CEK NILAI KOSONG ---
+    // Mencari data di berbagai kemungkinan nama variabel agar tidak kosong
+    const val = (key1, key2) => {
+        return p[key1] || p[key2] || '';
+    };
+
     const htmlContent = `
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <title>Berita Acara</title>
-      <style>
-        @page { size: A4; margin: 1.5cm 2cm 3.5cm 2cm; }
-        body { font-family: 'Times New Roman', serif; font-size: 11pt; color: #000; line-height: 1.2; }
-        .top-right-label { font-size: 10pt; margin-bottom: 20px; text-align: right; }
-        .doc-title { text-align: center; margin-bottom: 5px; font-size: 12pt; font-weight: bold; }
-        .doc-year { text-align: center; margin-bottom: 20px; font-size: 12pt; font-weight: bold; }
-        .section-title { font-weight: bold; margin-top: 10px; margin-bottom: 5px; text-transform: uppercase; }
-        table { width: 100%; border-collapse: collapse; }
-        td, th { vertical-align: top; padding: 3px; }
-        tr { page-break-inside: avoid; }
-        .main-table { border: 1px solid #000; margin-bottom: 10px; width: 100%; font-size: 11pt; }
-        .main-table td { border: 1px solid #000; }
-        .col-label { width: 35%; }
-        .col-sep { width: 2%; text-align: center; }
-        .col-val { width: 63%; }
-        .nested-table { width: 100%; border-collapse: collapse; margin: 0; }
-        .nested-table td { border: 1px solid #000; text-align: center; font-size: 10pt; padding: 4px; }
-        .check-table { width: 100%; border: 1px solid #000; margin-top: 5px; font-size: 10pt; }
-        .check-table th, .check-table td { border: 1px solid #000; padding: 4px; vertical-align: middle; }
-        .check-table thead th { background-color: #ffffff; text-align: center; font-weight: bold; border-bottom: 2px solid #000; }
-        .cat-row td { background-color: #f2f2f2; font-weight: bold; padding: 5px; border-top: 2px solid #000; border-bottom: 1px solid #000; }
-        .check-center { text-align: center; font-size: 12pt; font-family: DejaVu Sans, sans-serif; }
-        .photo-grid { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
-        .photo-item { width: 48%; border: 1px solid #000; padding: 5px; text-align: center; page-break-inside: avoid; }
-        .photo-item img { max-width: 100%; max-height: 200px; object-fit: contain; }
-        .caption { font-size: 9pt; font-style: italic; margin-top: 5px; }
-        .pdf-placeholder { width: 98%; border: 1px dashed #000; padding: 15px; text-align: center; background: #f9f9f9; margin-bottom: 10px; }
-      </style>
-    </head>
-    <body>
-      <div class="top-right-label">1 Lampiran Berita Acara</div>
-      <div class="doc-title">Lampiran Berita Acara Pengawasan Penaatan Lingkungan Hidup Daerah Kab. Sragen</div>
-      <div class="doc-year">Tahun 2025</div>
+    
+    // ... (kode HTML Head tetap sama) ...
 
       <div class="section-title">I. PROFIL JENIS USAHA DAN/ATAU KEGIATAN</div>
 
       <table class="main-table">
-        <tr><td class="col-label">Nama Jenis Usaha dan/atau Kegiatan</td><td class="col-sep">:</td><td class="col-val">${p.nama_usaha || ''}</td></tr>
+        <tr><td class="col-label">Nama Jenis Usaha dan/atau Kegiatan</td><td class="col-sep">:</td><td class="col-val">${val('nama_usaha')}</td></tr>
         <tr><td class="col-label">Jenis Usaha dan/atau Kegiatan</td><td class="col-sep">:</td><td class="col-val">${data.kategori_target || ''}</td></tr>
-        <tr><td class="col-label">Telepon/Fax</td><td class="col-sep">:</td><td class="col-val">${p.telepon || ''}</td></tr>
-        <tr><td class="col-label">Lokasi Usaha dan/atau Kegiatan</td><td class="col-sep">:</td><td class="col-val">${p.lokasi_usaha || ''}</td></tr>
-        <tr><td class="col-label">Holding Company</td><td class="col-sep">:</td><td class="col-val">${p.holding_company || ''}</td></tr>
-        <tr><td class="col-label">Tahun Berdiri/beroperasi</td><td class="col-sep">:</td><td class="col-val">${p.tahun_operasi || ''}</td></tr>
-        <tr><td class="col-label">Status Permodalan</td><td class="col-sep">:</td><td class="col-val">${p.status_permodalan || ''}</td></tr>
-        <tr><td class="col-label">Luas Area Usaha</td><td class="col-sep">:</td><td class="col-val">${p.luas_area_m2 || p.luas_area || ''} (m²)</td></tr>
-        <tr><td class="col-label">Luas Bangunan Usaha</td><td class="col-sep">:</td><td class="col-val">${p.luas_bangunan_m2 || p.luas_bangunan || ''} (m²)</td></tr>
-        <tr><td class="col-label">Lokasi Pembuangan Air Limbah</td><td class="col-sep">:</td><td class="col-val">${p.lokasi_buang_limbah || ''}</td></tr>
-        <tr><td class="col-label">Pemanfaatan Kembali Air Limbah</td><td class="col-sep">:</td><td class="col-val">${p.pemanfaatan_air_limbah || p.pemanfaatan_air || ''}</td></tr>
-        <tr><td class="col-label">Surat Izin SIPA (Lampirkan)</td><td class="col-sep">:</td><td class="col-val">${p.no_izin_sipa || p.no_sipa || 'Tidak Ada'}</td></tr>
-        <tr><td class="col-label">Jumlah Penggunaan Air (m³/hari)</td><td class="col-sep">:</td><td class="col-val">${p.debit_air_harian || p.penggunaan_air || ''} (M³/hari)</td></tr>
-        <tr><td class="col-label">Jumlah Jam Produksi / Hari</td><td class="col-sep">:</td><td class="col-val">${p.jam_produksi_hari || p.jam_produksi || ''} (Jam)</td></tr>
-        <tr><td class="col-label">Jumlah Hari Kerja / Minggu</td><td class="col-sep">:</td><td class="col-val">${p.hari_kerja_minggu || ''} (hari/minggu)</td></tr>
-        <tr><td class="col-label">Jumlah Hari Kerja / Tahun</td><td class="col-sep">:</td><td class="col-val">${p.hari_kerja_tahun || ''} (Hari)</td></tr>
-        <tr><td class="col-label">Jumlah Karyawan</td><td class="col-sep">:</td><td class="col-val">${p.jumlah_karyawan || ''} (Orang)</td></tr>
-        <tr><td class="col-label">Jam Shift Kerja/Hari</td><td class="col-sep">:</td><td class="col-val">${p.shift_kerja || ''} (shift kerja)</td></tr>
+        <tr><td class="col-label">Telepon/Fax</td><td class="col-sep">:</td><td class="col-val">${val('telepon')}</td></tr>
+        <tr><td class="col-label">Lokasi Usaha dan/atau Kegiatan</td><td class="col-sep">:</td><td class="col-val">${val('lokasi_usaha')}</td></tr>
+        <tr><td class="col-label">Holding Company</td><td class="col-sep">:</td><td class="col-val">${val('holding_company')}</td></tr>
+        <tr><td class="col-label">Tahun Berdiri/beroperasi</td><td class="col-sep">:</td><td class="col-val">${val('tahun_operasi')}</td></tr>
+        <tr><td class="col-label">Status Permodalan</td><td class="col-sep">:</td><td class="col-val">${val('status_permodalan')}</td></tr>
+        <tr><td class="col-label">Luas Area Usaha</td><td class="col-sep">:</td><td class="col-val">${val('luas_area')} (m²)</td></tr>
+        <tr><td class="col-label">Luas Bangunan Usaha</td><td class="col-sep">:</td><td class="col-val">${val('luas_bangunan')} (m²)</td></tr>
+        <tr><td class="col-label">Lokasi Pembuangan Air Limbah</td><td class="col-sep">:</td><td class="col-val">${val('lokasi_buang_limbah')}</td></tr>
+        <tr><td class="col-label">Pemanfaatan Kembali Air Limbah</td><td class="col-sep">:</td><td class="col-val">${val('pemanfaatan_air')}</td></tr>
+        <tr><td class="col-label">Surat Izin SIPA (Lampirkan)</td><td class="col-sep">:</td><td class="col-val">${val('no_sipa') || 'Tidak Ada'}</td></tr>
+        <tr><td class="col-label">Jumlah Penggunaan Air (m³/hari)</td><td class="col-sep">:</td><td class="col-val">${val('penggunaan_air')} (M³/hari)</td></tr>
+        <tr><td class="col-label">Jumlah Jam Produksi / Hari</td><td class="col-sep">:</td><td class="col-val">${val('jam_produksi')} (Jam)</td></tr>
+        <tr><td class="col-label">Jumlah Hari Kerja / Minggu</td><td class="col-sep">:</td><td class="col-val">${val('hari_kerja_minggu')} (hari/minggu)</td></tr>
+        <tr><td class="col-label">Jumlah Hari Kerja / Tahun</td><td class="col-sep">:</td><td class="col-val">${val('hari_kerja_tahun')} (Hari)</td></tr>
+        <tr><td class="col-label">Jumlah Karyawan</td><td class="col-sep">:</td><td class="col-val">${val('jumlah_karyawan')} (Orang)</td></tr>
+        <tr><td class="col-label">Jam Shift Kerja/Hari</td><td class="col-sep">:</td><td class="col-val">${val('shift_kerja')} (shift kerja)</td></tr>
         
         ${isFasyankes ? `
-        <tr><td class="col-label">Jumlah Tempat Tidur</td><td class="col-sep">:</td><td class="col-val">${p.jumlah_tempat_tidur || ''}</td></tr>
+        <tr><td class="col-label">Jumlah Tempat Tidur</td><td class="col-sep">:</td><td class="col-val">${val('jumlah_tempat_tidur')}</td></tr>
         ` : ''}
 
         ${!isFasyankes ? `
@@ -333,17 +303,17 @@ export async function GET(request) {
             <table class="nested-table">
               <tr><td width="33%">Terpasang</td><td width="33%">Sesuai Izin</td><td width="33%">Riil</td></tr>
               <tr>
-                <td>${p.kapasitas_produksi?.terpasang || ''}<br/>(menit/bulan)</td>
-                <td>${p.kapasitas_produksi?.sesuai_izin || ''}<br/>(menit/bulan)</td>
-                <td>${p.kapasitas_produksi?.riil || ''}<br/>(menit/tahun)</td>
+                <td>${p.kapasitas_terpasang || ''}<br/>(menit/bulan)</td>
+                <td>${p.kapasitas_izin || ''}<br/>(menit/bulan)</td>
+                <td>${p.kapasitas_riil || ''}<br/>(menit/tahun)</td>
               </tr>
             </table>
           </td>
         </tr>
-        <tr><td class="col-label">Bahan Baku Utama</td><td class="col-sep">:</td><td class="col-val">${p.bahan_baku_utama || ''}</td></tr>
-        <tr><td class="col-label">Bahan Baku Penolong</td><td class="col-sep">:</td><td class="col-val">${p.bahan_baku_penolong || ''}</td></tr>
-        <tr><td class="col-label">Proses Produksi</td><td class="col-sep">:</td><td class="col-val">${p.proses_produksi || ''}</td></tr>
-        <tr><td class="col-label">Prosentase Pemasaran Export</td><td class="col-sep">:</td><td class="col-val">${p.persen_export || ''}</td></tr>
+        <tr><td class="col-label">Bahan Baku Utama</td><td class="col-sep">:</td><td class="col-val">${val('bahan_baku_utama')}</td></tr>
+        <tr><td class="col-label">Bahan Baku Penolong</td><td class="col-sep">:</td><td class="col-val">${val('bahan_baku_penolong')}</td></tr>
+        <tr><td class="col-label">Proses Produksi</td><td class="col-sep">:</td><td class="col-val">${val('proses_produksi')}</td></tr>
+        <tr><td class="col-label">Prosentase Pemasaran Export</td><td class="col-sep">:</td><td class="col-val">${val('pemasaran_export')} %</td></tr>
         ` : ''}
       </table>
 
@@ -351,33 +321,33 @@ export async function GET(request) {
 
       <table class="main-table" style="margin-top: 20px;">
         ${!isFasyankes ? `
-        <tr><td class="col-label">Prosentase Pemasaran Domestik</td><td class="col-sep">:</td><td class="col-val">${p.persen_domestik || ''}</td></tr>
-        <tr><td class="col-label">Merek Dagang</td><td class="col-sep">:</td><td class="col-val">${p.merek_dagang || ''}</td></tr>
+        <tr><td class="col-label">Prosentase Pemasaran Domestik</td><td class="col-sep">:</td><td class="col-val">${val('pemasaran_domestik')} %</td></tr>
+        <tr><td class="col-label">Merek Dagang</td><td class="col-sep">:</td><td class="col-val">${val('merek_dagang')}</td></tr>
         ` : ''}
         
         ${isFasyankes ? `
-        <tr><td class="col-label">Media Tempat Pembuangan Air Limbah</td><td class="col-sep">:</td><td class="col-val">${p.media_pembuangan_air || ''}</td></tr>
+        <tr><td class="col-label">Media Tempat Pembuangan Air Limbah</td><td class="col-sep">:</td><td class="col-val">${val('media_pembuangan_air')}</td></tr>
         ` : `
-        <tr><td class="col-label">Bahan Bakar Yang Digunakan</td><td class="col-sep">:</td><td class="col-val">${p.bahan_bakar || ''}</td></tr>
-        <tr><td class="col-label">Satuan Bahan Bakar</td><td class="col-sep">:</td><td class="col-val">${p.satuan_bahan_bakar || ''}</td></tr>
-        <tr><td class="col-label">Jumlah Konsumsi Bahan Bakar/th</td><td class="col-sep">:</td><td class="col-val">${p.konsumsi_bb_tahun || ''}</td></tr>
+        <tr><td class="col-label">Bahan Bakar Yang Digunakan</td><td class="col-sep">:</td><td class="col-val">${val('bahan_bakar')}</td></tr>
+        <tr><td class="col-label">Satuan Bahan Bakar</td><td class="col-sep">:</td><td class="col-val">${val('satuan_bahan_bakar')}</td></tr>
+        <tr><td class="col-label">Jumlah Konsumsi Bahan Bakar/th</td><td class="col-sep">:</td><td class="col-val">${val('konsumsi_bb')}</td></tr>
         `}
 
-        <tr><td class="col-label">Sistem Manajemen Lingkungan</td><td class="col-sep">:</td><td class="col-val">${p.sistem_manajemen_lingkungan || ''}</td></tr>
-        <tr><td class="col-label">Dokumen Lingkungan</td><td class="col-sep">:</td><td class="col-val">${p.dokumen_lingkungan || ''}</td></tr>
-        <tr><td class="col-label">Inspeksi Terakhir</td><td class="col-sep">:</td><td class="col-val">${p.tgl_inspeksi_terakhir || p.inspeksi_terakhir ? new Date(p.tgl_inspeksi_terakhir || p.inspeksi_terakhir).toLocaleDateString('id-ID') : ''}</td></tr>
+        <tr><td class="col-label">Sistem Manajemen Lingkungan</td><td class="col-sep">:</td><td class="col-val">${val('sistem_manajemen')}</td></tr>
+        <tr><td class="col-label">Dokumen Lingkungan</td><td class="col-sep">:</td><td class="col-val">${val('dokumen_lingkungan')}</td></tr>
+        <tr><td class="col-label">Inspeksi Terakhir</td><td class="col-sep">:</td><td class="col-val">${p.inspeksi_terakhir ? new Date(p.inspeksi_terakhir).toLocaleDateString('id-ID') : ''}</td></tr>
       </table>
 
       <div style="margin: 15px 0; font-size: 10pt; font-style: italic; border: 1px solid #000; padding: 5px;">
         Setiap pelaku usaha harus memiliki Ruang Terbuka Hijau (RTH) sejumlah 10%-20% dari luas lahan usaha dan/atau kegiatan.<br/>
-        <b>Realisasi RTH: ${p.ruang_terbuka_hijau_persen || p.rth_persen || '0'} %</b>
+        <b>Realisasi RTH: ${val('rth_persen')} %</b>
       </div>
 
       <div style="page-break-before: always;"></div>
 
       <div class="section-title">II. RINGKASAN TEMUAN LAPANGAN</div>
 
-      <table class="check-table">
+<table class="check-table">
         <thead>
           <tr>
             <th width="40%">Aspek Yang Diawasi</th>
@@ -392,11 +362,26 @@ export async function GET(request) {
               const key = `${category.kategori}|${pertanyaan}`;
               const dataItem = dataMap[key]; 
 
+              // --- LOGIKA SAKTI PERBAIKAN CENTANG ---
+              // Kita paksa konversi ke string dulu, baru cek isinya.
+              // Ini akan menangkap: true (boolean), "true" (string), "on", 1, dll.
+              
+              const val = dataItem ? String(dataItem.is_ada) : "false";
+              const isCentangAda = val === "true";
+              const isCentangTidak = val === "false" && dataItem; // Cuma centang 'Tidak' kalau dataItem ada (bukan undefined)
+
               return `
               <tr>
                 <td style="padding-left: 10px;">${pertanyaan}</td>
-                <td class="check-center border">${dataItem?.is_ada === true ? '✔' : ''}</td>
-                <td class="check-center border">${dataItem?.is_ada === false ? '✔' : ''}</td>
+                
+                <td class="check-center border" style="font-family: DejaVu Sans, sans-serif; font-size: 14pt;">
+                   ${isCentangAda ? '✔' : ''}
+                </td>
+                
+                <td class="check-center border" style="font-family: DejaVu Sans, sans-serif; font-size: 14pt;">
+                   ${isCentangTidak ? '✔' : ''}
+                </td>
+                
                 <td class="border">${dataItem?.keterangan || ''}</td>
               </tr>
               `;
@@ -446,7 +431,7 @@ export async function GET(request) {
       <div class="photo-grid">
         ${data.checklist.map(item => {
            const key = `${item.kategori}|${item.pertanyaan}`;
-           const imgBase64 = fotoChecklistMap[key]; // Panggil dari Map Base64
+           const imgBase64 = fotoChecklistMap[key]; 
 
            if(imgBase64) {
              return `

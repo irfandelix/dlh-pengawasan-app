@@ -349,20 +349,28 @@ export default function FormLaporanPage() {
   };
 
   // --- LOGIC 5: SUBMIT ---
-  const handleSubmit = async () => {
+  const handleSubmit = async (e) => {
+    e.preventDefault(); // Mencegah reload halaman
+    
     if(!confirm("KIRIM LAPORAN SEKARANG?\n\nPastikan data sudah benar. Data tidak dapat diubah setelah dikirim.")) return;
     
-    setLoading(true);
+    setIsSubmitting(true);
+    
     try {
+      // PENTING: Ambil data checklist terbaru dari State formData
+      // Convert Object Map menjadi Array agar bisa disimpan di MongoDB
+      const checklistArray = Object.values(formData.checklist || {}); 
+      
+      // Jika checklistArray kosong (karena user mungkin belum isi apa-apa tapi langsung submit)
+      // Kita harus tetap kirim array kosong atau data yang ada
+      
       const payload = {
         token: token,
         profil: formData.profil,
-        checklist: formData.checklist,
-        status: 'SUBMITTED' // Pastikan status berubah jadi SUBMITTED
+        checklist: formData.checklist, // Kirim checklist yang sudah berbentuk Array (karena handleChecklistChange sudah menyimpannya sebagai array)
+        status: 'SUBMITTED'
       };
 
-      // Gunakan route yang sesuai untuk update/submit laporan
-      // Asumsi route kamu: /api/laporan atau /api/lapor/[token]
       const res = await fetch('/api/laporan', { 
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -373,14 +381,15 @@ export default function FormLaporanPage() {
       if (json.success) {
         alert("✅ TERIMA KASIH! Laporan berhasil disimpan ke Database.");
         localStorage.removeItem(`draft_${token}`);
-        router.push('/sukses'); // Atau halaman sukses
+        router.push('/sukses');
       } else {
         alert("Gagal kirim: " + json.error);
       }
     } catch (err) {
+      console.error(err);
       alert("Terjadi kesalahan jaringan.");
     } finally {
-      setLoading(false);
+      setIsSubmitting(false);
     }
   };
 
