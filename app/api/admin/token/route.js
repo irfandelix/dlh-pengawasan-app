@@ -2,54 +2,67 @@ import { NextResponse } from 'next/server';
 import dbConnect from '@/lib/db';
 import Laporan from '@/models/Laporan';
 
-// 🔥 WAJIB DITAMBAHKAN: Mencegah Next.js menyimpan cache data lama
+// Mencegah cache data lama
 export const dynamic = 'force-dynamic';
 
-// 1. GET: UNTUK MENGAMBIL DATA DARI MONGODB KE DASHBOARD
+// 1. GET: AMBIL DATA
 export async function GET() {
   try {
     await dbConnect();
-    
-    // Pastikan field sort sesuai dengan Schema kamu ('created_at' atau 'createdAt')
-    // Berdasarkan screenshot DB kamu sebelumnya, sepertinya pakai 'created_at'
-    const data = await Laporan.find({}).sort({ created_at: -1 });
-
-    // Tambahkan log ini untuk melihat di terminal apakah data berhasil diambil
-    console.log("GET Token Request. Jumlah Data:", data.length);
-
-    return NextResponse.json({ 
-      success: true, 
-      data: data 
-    });
-
+    const data = await Laporan.find({}).sort({ createdAt: -1 });
+    return NextResponse.json({ success: true, data: data });
   } catch (error) {
     console.error("Database Error:", error);
     return NextResponse.json({ success: false, error: "Gagal mengambil data" }, { status: 500 });
   }
 }
 
-// 2. POST: UNTUK GENERATE TOKEN BARU
+// 2. POST: GENERATE TOKEN BARU (FIX INVALID DATE)
 export async function POST(request) {
   try {
     const body = await request.json();
     await dbConnect();
 
-    const prefix = body.kategori_target === 'FASYANKES' ? 'FSY' : 'IND';
+    // --- 🛠️ LOGIKA PERBAIKAN TANGGAL (PENTING) ---
+    // Default ke hari ini jika kosong
+    let tglValid = new Date(); 
+    
+    // Jika user mengirim data tanggal, kita cek dulu valid atau tidak
+    if (body.tanggal_pengawasan) {
+        const parsedDate = new Date(body.tanggal_pengawasan);
+        // Jika valid (bukan Invalid Date), pakai tanggal dari user
+        if (!isNaN(parsedDate.getTime())) {
+            tglValid = parsedDate;
+        }
+    }
+    // ------------------------------------------------
+
+    // Generate Token
+    const prefix = body.kategori === 'FASYANKES' ? 'FSY' : 'IND';
     const randomNum = Math.floor(1000 + Math.random() * 9000);
     const tokenBaru = `${prefix}-${randomNum}`;
 
     const laporanBaru = await Laporan.create({
       token: tokenBaru,
-      kategori_target: body.kategori_target,
+      kategori_target: body.kategori, 
+      
+      // ✅ GUNAKAN TANGGAL YANG SUDAH DIVALIDASI
+      tanggal_pengawasan: tglValid,
+      
+      // Pastikan array tidak undefined
+      tim_pengawas: body.tim_pengawas || [], 
+
       profil: {
-        nama_usaha: body.nama_usaha
+        nama_usaha: body.nama_target 
       },
+      
       status: 'DRAFT',
       checklist: [] 
     });
 
     return NextResponse.json({ 
       success: true, 
+      token: tokenBaru,
       data: laporanBaru 
     });
 

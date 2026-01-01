@@ -4,6 +4,17 @@ import mongoose from 'mongoose';
 const LaporanSchema = new mongoose.Schema({
   token: { type: String, required: true, unique: true, index: true },
   
+  // BAGIAN A: Tim Pengawas (Bisa lebih dari 1 orang)
+  tanggal_pengawasan: { type: Date, required: true },
+  tim_pengawas: [{
+    nama: String,
+    nip: String,
+    pangkat: String,
+    jabatan: String,
+    no_telp: String, 
+    instansi: String
+  }],
+  
   // --- TAMBAHAN BARU ---
   kategori_target: {
     type: String,
@@ -24,6 +35,9 @@ const LaporanSchema = new mongoose.Schema({
     nama_usaha: String,
     jenis_kegiatan: String,
     telepon: String,
+    // 🔥 WAJIB TAMBAHKAN BARIS INI 🔥
+    koordinat: String, 
+    // -------------------------------
     lokasi_usaha: String,
     holding_company: String,
     tahun_operasi: String,

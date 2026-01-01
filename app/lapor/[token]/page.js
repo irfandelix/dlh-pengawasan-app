@@ -171,8 +171,8 @@ export default function FormLaporanPage() {
 
   const [activeTab, setActiveTab] = useState(1);
   const [loading, setLoading] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false); // <--- TAMBAHKAN BARIS INI
-  const [activeChecklist, setActiveChecklist] = useState([]); // State untuk menyimpan List Pertanyaan
+  const [isSubmitting, setIsSubmitting] = useState(false); 
+  const [activeChecklist, setActiveChecklist] = useState([]); 
   
   const [formData, setFormData] = useState({
     token: token,
@@ -184,28 +184,22 @@ export default function FormLaporanPage() {
   useEffect(() => {
     const fetchInitialData = async () => {
        try {
-         // Kita gunakan endpoint GET by Token yang sudah dibuat di route
-         // Ganti endpoint ini sesuai route backend kamu (misal: /api/lapor/[token] atau /api/cek-token)
-         // Asumsi pakai: /api/admin/pdf (karena route ini punya GET by token yg lengkap) 
-         // ATAU kalau kamu punya route khusus untuk cek token user, pakai itu.
-         // Disini saya pakai logika fetch yang ada di kode kamu sebelumnya: /api/cek-token
-         
-         const res = await fetch('/api/cek-token', { // Pastikan route ini ada dan mengembalikan kategori_target
-            method: 'POST', 
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ token })
+         const res = await fetch('/api/cek-token', { 
+           method: 'POST', 
+           headers: {'Content-Type': 'application/json'},
+           body: JSON.stringify({ token })
          });
          const json = await res.json();
          
          if(json.success) {
-            // 1. SET LIST PERTANYAAN BERDASARKAN KATEGORI
+            // 1. SET LIST PERTANYAAN
             if (json.data.kategori_target === 'FASYANKES' || json.data.kategori === 'FASYANKES') {
-                setActiveChecklist(MASTER_CHECKLIST_FASYANKES);
+               setActiveChecklist(MASTER_CHECKLIST_FASYANKES);
             } else {
-                setActiveChecklist(MASTER_CHECKLIST_INDUSTRI);
+               setActiveChecklist(MASTER_CHECKLIST_INDUSTRI);
             }
 
-            // 2. SET DATA FORM (Draft atau Baru)
+            // 2. SET DATA FORM
             const draft = localStorage.getItem(`draft_${token}`);
             if (draft) {
                const parsedDraft = JSON.parse(draft);
@@ -214,7 +208,7 @@ export default function FormLaporanPage() {
                  profil: { 
                    ...parsedDraft.profil, 
                    nama_usaha: json.data.nama_usaha,
-                   kategori: json.data.kategori_target || json.data.kategori // Pastikan field match DB
+                   kategori: json.data.kategori_target || json.data.kategori 
                  } 
                }));
             } else {
@@ -323,14 +317,12 @@ export default function FormLaporanPage() {
             profil: { ...prev.profil, file_sipa: json.file_url }
           }));
           alert("Berkas SIPA Berhasil Diupload!");
-        // --- [BARU] LOGIC UNTUK UPLOAD DIAGRAM ALIR ---
         } else if (context === 'DIAGRAM') {
           setFormData(prev => ({
             ...prev,
             profil: { ...prev.profil, file_diagram: json.file_url }
           }));
           alert("Diagram Alir Berhasil Diupload!");
-        // ----------------------------------------------
         } else if (context === 'CHECKLIST') {
           handleChecklistChange(extraParam.kategori, extraParam.pertanyaan, 'bukti_foto', [json.file_url]);
           alert("Bukti Foto Berhasil Diupload!");
@@ -349,26 +341,51 @@ export default function FormLaporanPage() {
     }
   };
 
-  // --- LOGIC 5: SUBMIT ---
+  // --- LOGIC 5: GET GEOLOCATION (BARU) ---
+  const handleGetLocation = () => {
+    if (navigator.geolocation) {
+      const btn = document.getElementById("btn-lokasi");
+      if(btn) btn.innerText = "⏳ Mencari...";
+
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const coords = `${position.coords.latitude},${position.coords.longitude}`;
+          
+          setFormData(prev => ({
+            ...prev,
+            profil: { ...prev.profil, koordinat: coords }
+          }));
+
+          alert("Lokasi berhasil ditemukan: " + coords);
+          if(btn) btn.innerText = "📍 Ambil Lokasi Saya";
+        },
+        (error) => {
+          console.error("Error GPS:", error);
+          alert("Gagal mengambil lokasi. Pastikan GPS aktif dan izin browser diberikan.");
+          if(btn) btn.innerText = "📍 Ambil Lokasi Saya";
+        }
+      );
+    } else {
+      alert("Browser Anda tidak mendukung Geolocation.");
+    }
+  };
+
+  // --- LOGIC 6: SUBMIT ---
   const handleSubmit = async (e) => {
-    e.preventDefault(); // Mencegah reload halaman
+    e.preventDefault(); 
     
     if(!confirm("KIRIM LAPORAN SEKARANG?\n\nPastikan data sudah benar. Data tidak dapat diubah setelah dikirim.")) return;
     
     setIsSubmitting(true);
+    setLoading(true); // Tambahkan ini agar button disabled
     
     try {
-      // PENTING: Ambil data checklist terbaru dari State formData
-      // Convert Object Map menjadi Array agar bisa disimpan di MongoDB
       const checklistArray = Object.values(formData.checklist || {}); 
-      
-      // Jika checklistArray kosong (karena user mungkin belum isi apa-apa tapi langsung submit)
-      // Kita harus tetap kirim array kosong atau data yang ada
       
       const payload = {
         token: token,
         profil: formData.profil,
-        checklist: formData.checklist, // Kirim checklist yang sudah berbentuk Array (karena handleChecklistChange sudah menyimpannya sebagai array)
+        checklist: formData.checklist, 
         status: 'SUBMITTED'
       };
 
@@ -385,16 +402,17 @@ export default function FormLaporanPage() {
         router.push('/sukses');
       } else {
         alert("Gagal kirim: " + json.error);
+        setLoading(false);
       }
     } catch (err) {
       console.error(err);
       alert("Terjadi kesalahan jaringan.");
+      setLoading(false);
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  // Helper untuk cek kategori saat render
   const isFasyankes = formData.profil.kategori === 'FASYANKES';
 
   return (
@@ -456,6 +474,34 @@ export default function FormLaporanPage() {
                     <label className="label-text">Lokasi Usaha dan/atau Kegiatan</label>
                     <textarea name="lokasi_usaha" value={formData.profil.lokasi_usaha || ''} onChange={handleProfilChange} rows="2" className="input-field" placeholder="Alamat lengkap..."></textarea>
                   </div>
+
+                  {/* 🔥 INPUT KOORDINAT & TOMBOL LOKASI (BARU) 🔥 */}
+                  <div className="md:col-span-2 bg-gray-50 p-4 rounded border border-gray-200">
+                    <label className="label-text">Titik Koordinat Lokasi (Latitude, Longitude)</label>
+                    <div className="flex gap-2 mt-1">
+                      <input 
+                        type="text" 
+                        name="koordinat" 
+                        value={formData.profil.koordinat || ''} 
+                        onChange={handleProfilChange} 
+                        className="input-field flex-1" 
+                        placeholder="Contoh: -7.4302, 110.9921" 
+                      />
+                      <button 
+                        id="btn-lokasi"
+                        type="button" 
+                        onClick={handleGetLocation} 
+                        className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm font-bold flex items-center gap-1 transition-colors whitespace-nowrap shadow-sm"
+                      >
+                        📍 <span className="hidden sm:inline">Ambil Lokasi Saya</span>
+                      </button>
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1">
+                      * Pastikan Anda berada di lokasi saat menekan tombol ini.
+                    </p>
+                  </div>
+                  {/* ----------------------------------------------- */}
+
                   <div>
                     <label className="label-text">Holding Company</label>
                     <input type="text" name="holding_company" value={formData.profil.holding_company || ''} onChange={handleProfilChange} className="input-field" />
@@ -542,7 +588,6 @@ export default function FormLaporanPage() {
                     <input type="number" name="shift_kerja" value={formData.profil.shift_kerja || ''} onChange={handleProfilChange} className="input-field" />
                   </div>
                   
-                  {/* FIELD KHUSUS FASYANKES */}
                   {isFasyankes && (
                     <div className="bg-yellow-50 p-4 border border-yellow-200 rounded md:col-span-2">
                         <label className="label-text text-yellow-800">Jumlah Tempat Tidur (Khusus Fasyankes)</label>
@@ -553,12 +598,11 @@ export default function FormLaporanPage() {
                 </div>
               </div>
 
-              {/* C. PRODUKSI (HANYA MUNCUL JIKA BUKAN FASYANKES/INDUSTRI) */}
+              {/* C. PRODUKSI */}
               {!isFasyankes && (
               <div>
                 <h3 className="text-lg font-bold text-green-800 border-b-2 border-green-100 pb-2 mb-4">C. Kapasitas & Proses Produksi</h3>
                 
-                {/* Tabel Kapasitas Produksi */}
                 <div className="overflow-x-auto mb-6">
                   <label className="label-text mb-2">Kapasitas Produksi</label>
                   <table className="min-w-full text-sm border border-gray-300 bg-white shadow-sm rounded-lg overflow-hidden">
@@ -618,7 +662,6 @@ export default function FormLaporanPage() {
               <div>
                 <h3 className="text-lg font-bold text-green-800 border-b-2 border-green-100 pb-2 mb-4">D. Energi & Manajemen Lingkungan</h3>
                 
-                {/* --- LOGIKA 1: JIKA INDUSTRI (TAMPILKAN BAHAN BAKAR) --- */}
                 {!isFasyankes && (
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <div>
@@ -636,7 +679,6 @@ export default function FormLaporanPage() {
                   </div>
                 )}
 
-                {/* --- LOGIKA 2: JIKA FASYANKES (TAMPILKAN DIAGRAM & MEDIA PEMBUANGAN) --- */}
                 {isFasyankes && (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {/* Upload Diagram Alir */}
@@ -645,20 +687,17 @@ export default function FormLaporanPage() {
                       <div className="flex flex-col mt-2">
                         <label className="cursor-pointer bg-white border border-yellow-300 text-yellow-700 px-4 py-2 rounded hover:bg-yellow-100 text-sm font-medium text-center shadow-sm transition-all hover:shadow-md">
                            <span>{formData.profil.file_diagram ? "✅ Berkas Terupload (Ganti?)" : "📂 Upload Diagram Alir (PDF/Image)"}</span>
-                           {/* ▼▼▼ TEMPEL KODINGANMU DI SINI (GANTIKAN INPUT LAMA) ▼▼▼ */}
                            <input 
                              type="file" 
-                             accept="image/png, image/jpeg, image/jpg" // Wajib gambar agar muncul di PDF
+                             accept="image/png, image/jpeg, image/jpg"
                              className="hidden"
                              onChange={(e) => handleFileUpload(e, 'DIAGRAM')} 
                            />
-                           {/* ▲▲▲ SAMPAI SINI ▲▲▲ */}
                         </label>
                         <p className="text-xs text-gray-400 mt-1 text-center">Maksimal 5MB</p>
                       </div>
                     </div>
 
-                    {/* Media Pembuangan Air Limbah */}
                     <div className="md:col-span-2">
                       <label className="label-text">Media Tempat Pembuangan Air Limbah</label>
                       <input type="text" name="media_pembuangan_air" value={formData.profil.media_pembuangan_air || ''} onChange={handleProfilChange} className="input-field" placeholder="Contoh: Sungai Bengawan Solo / IPAL Komunal" />
@@ -666,7 +705,6 @@ export default function FormLaporanPage() {
                   </div>
                 )}
 
-                {/* --- BAGIAN UMUM (TAMPIL DI KEDUANYA) --- */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
                   <div>
                     <label className="label-text">Sistem Manajemen Lingkungan</label>
@@ -708,8 +746,6 @@ export default function FormLaporanPage() {
           {/* --- TAB 2: CHECKLIST (DINAMIS) --- */}
           {activeTab === 2 && (
             <div className="space-y-8 animate-fade-in">
-              
-              {/* LOOPING CHECKLIST SESUAI KATEGORI (Industri / Fasyankes) */}
               {activeChecklist.map((group, idx) => (
                 <div key={idx} className="border rounded-lg overflow-hidden mb-6 shadow-sm border-gray-200">
                   <div className="bg-green-50 px-4 py-3 border-b border-green-100">
@@ -728,7 +764,6 @@ export default function FormLaporanPage() {
                             {pertanyaan}
                           </div>
                           
-                          {/* CHECKBOX */}
                           <div className="md:col-span-2 flex items-center space-x-4 pt-1">
                             <label className="flex items-center space-x-2 cursor-pointer select-none">
                               <input 
@@ -741,7 +776,6 @@ export default function FormLaporanPage() {
                             </label>
                           </div>
 
-                          {/* KETERANGAN & UPLOAD */}
                           <div className="md:col-span-5">
                             <textarea 
                               className="w-full text-sm text-gray-900 placeholder-gray-500 border border-gray-300 rounded-md focus:ring-green-500 focus:border-green-500 p-2 bg-white" 

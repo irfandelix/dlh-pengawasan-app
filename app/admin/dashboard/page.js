@@ -1,300 +1,390 @@
-'use client';
-import { useState, useEffect } from 'react';
+"use client";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation"; // Import untuk navigasi (Logout)
 
-// --- [1] KONFIGURASI JUMLAH SOAL (DINAMIS) ---
-const TOTAL_SOAL_INDUSTRI = 45;   
-const TOTAL_SOAL_FASYANKES = 39;  // Lebih sedikit karena tidak ada Emisi Udara
+export default function DashboardAdmin() {
+  const router = useRouter(); // Inisialisasi router
 
-// --- KOMPONEN KECIL UNTUK TOMBOL DOWNLOAD ---
-function TombolDownloadPDF({ token }) {
-  const [isLoading, setIsLoading] = useState(false);
+  // --- STATE UTAMA ---
+  const [namaTarget, setNamaTarget] = useState("");
+  const [kategori, setKategori] = useState("INDUSTRI");
+  const [tanggal, setTanggal] = useState(new Date().toISOString().split('T')[0]);
+  const [loading, setLoading] = useState(false);
 
-  const handleDownload = async () => {
-    try {
-      setIsLoading(true);
-      const response = await fetch(`/api/admin/pdf?token=${token}`);
-      if (!response.ok) throw new Error("Gagal generate PDF");
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `Berita_Acara_${token}.pdf`; 
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      window.URL.revokeObjectURL(url);
-    } catch (err) {
-      console.error(err);
-      alert("Gagal mendownload PDF. Coba lagi.");
-    } finally {
-      setIsLoading(false);
+  // --- STATE PPLH (PETUGAS) ---
+  const [listPplh, setListPplh] = useState([]); 
+  const [selectedPplhIds, setSelectedPplhIds] = useState([]); 
+  const [showModal, setShowModal] = useState(false);
+  
+  // --- STATE DATA LAPORAN (KANAN) ---
+  const [laporanList, setLaporanList] = useState([]);
+  const [loadingList, setLoadingList] = useState(true);
+
+  // --- STATE FORM PPLH (TAMBAH/EDIT) ---
+  const [formPplh, setFormPplh] = useState({
+    nama: "", nip: "", pangkat: "", jabatan: "", no_telp: "", instansi: "DLH Kab. Sragen"
+  });
+  const [editId, setEditId] = useState(null);
+
+  // =========================================
+  // 1. FUNGSI LOGOUT (BARU)
+  // =========================================
+  const handleLogout = () => {
+    if (confirm("Apakah Anda yakin ingin keluar?")) {
+      // Di sini Anda bisa menambahkan logika hapus token/session jika ada
+      // localStorage.removeItem("token"); 
+      router.push("/"); // Kembali ke halaman utama/login
     }
   };
 
-  return (
-    <button 
-      onClick={handleDownload}
-      disabled={isLoading}
-      className={`px-3 py-1 rounded shadow-sm flex items-center gap-1 text-xs font-bold transition-all ${
-        isLoading 
-          ? 'bg-gray-400 text-white cursor-not-allowed' 
-          : 'bg-red-600 hover:bg-red-700 text-white'
-      }`}
-    >
-      {isLoading ? <span>⏳...</span> : <><span>📄</span> PDF</>}
-    </button>
-  );
-}
+  // =========================================
+  // 2. FETCH DATA
+  // =========================================
+  
+  const fetchPplh = async () => {
+    try {
+      const res = await fetch("/api/admin/pplh");
+      if (res.ok) setListPplh(await res.json());
+    } catch (err) {
+      console.error("Gagal load PPLH:", err);
+    }
+  };
 
-// --- KOMPONEN UTAMA DASHBOARD ---
-export default function AdminDashboard() {
-  const [tokens, setTokens] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [namaUsaha, setNamaUsaha] = useState('');
-  const [tipeTarget, setTipeTarget] = useState('INDUSTRI'); 
+  const fetchLaporan = async () => {
+    setLoadingList(true);
+    try {
+      const res = await fetch("/api/admin/token");
+      const result = await res.json();
+      if (result.success) {
+        setLaporanList(result.data);
+      }
+    } catch (err) {
+      console.error("Gagal load Laporan:", err);
+    } finally {
+      setLoadingList(false);
+    }
+  };
 
-  // Ambil Data
   useEffect(() => {
-    fetchTokens();
+    fetchPplh();
+    fetchLaporan();
   }, []);
 
-  const fetchTokens = async () => {
-    try {
-      const res = await fetch('/api/admin/token'); 
-      const json = await res.json();
-      if (json.success) {
-        setTokens(json.data); 
-      }
-    } catch (err) {
-      console.error("Gagal ambil data", err);
+  // =========================================
+  // 3. LOGIC HITUNG SKOR (REAL) 🧮
+  // =========================================
+  const hitungSkor = (item) => {
+    const TOTAL_SOAL = item.kategori_target === 'FASYANKES' ? 39 : 45;
+    const checklist = item.checklist || [];
+    const jumlahAda = checklist.filter(c => 
+      c.is_ada === true || c.is_ada === "true" || c.is_ada === "1" || c.is_ada === 1
+    ).length;
+
+    const skor = Math.round((jumlahAda / TOTAL_SOAL) * 100);
+
+    let label = "";
+    let colorClass = "";
+
+    if (skor >= 90) {
+      label = "Sangat Baik";
+      colorClass = "bg-green-100 text-green-700 border-green-200";
+    } else if (skor >= 75) {
+      label = "Baik";
+      colorClass = "bg-blue-100 text-blue-700 border-blue-200";
+    } else if (skor >= 50) {
+      label = "Cukup";
+      colorClass = "bg-yellow-100 text-yellow-700 border-yellow-200";
+    } else {
+      label = "Kurang";
+      colorClass = "bg-red-100 text-red-700 border-red-200";
     }
+
+    return { skor, label, colorClass };
   };
 
-  // Generate Token
-  const handleGenerate = async (e) => {
-    e.preventDefault();
+  // =========================================
+  // 4. LOGIC GENERATE TOKEN & CRUD
+  // =========================================
+  
+  const handleGenerateToken = async () => {
+    if (!namaTarget || selectedPplhIds.length === 0) {
+      alert("Nama Target dan Minimal 1 Petugas PPLH wajib dipilih!");
+      return;
+    }
+
     setLoading(true);
+    const timTerpilih = listPplh.filter(p => selectedPplhIds.includes(p._id));
+
     try {
-      const res = await fetch('/api/admin/token', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          nama_usaha: namaUsaha, 
-          kategori_target: tipeTarget 
+      const res = await fetch("/api/admin/token", { 
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          nama_target: namaTarget,
+          kategori: kategori,
+          tanggal_pengawasan: tanggal,
+          tim_pengawas: timTerpilih 
         })
       });
-      const json = await res.json();
-      if (json.success) {
-        setNamaUsaha(''); 
-        fetchTokens(); 
-        alert(`SUKSES! Token Baru: ${json.data.token}`);
+      
+      const result = await res.json();
+      if (result.success) {
+        setNamaTarget("");
+        setSelectedPplhIds([]);
+        fetchLaporan();
+        alert("Sukses! Token: " + result.token);
       } else {
-        alert("Gagal: " + json.error);
+        alert("Gagal: " + (result.error || "Terjadi kesalahan"));
       }
     } catch (err) {
-      alert("Error jaringan.");
+      console.error(err);
+      alert("Error sistem saat generate token");
     } finally {
       setLoading(false);
     }
   };
+  
+  const handleSimpanPplh = async (e) => {
+    e.preventDefault();
+    const method = editId ? "PUT" : "POST";
+    const body = editId ? { ...formPplh, _id: editId } : formPplh;
+
+    await fetch("/api/admin/pplh", {
+      method: method,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+
+    setFormPplh({ nama: "", nip: "", pangkat: "", jabatan: "", no_telp: "", instansi: "DLH Kab. Sragen" });
+    setEditId(null);
+    fetchPplh(); 
+  };
+
+  const handleHapusPplh = async (id) => {
+    if (confirm("Yakin hapus data PPLH ini?")) {
+      await fetch(`/api/admin/pplh?id=${id}`, { method: "DELETE" });
+      fetchPplh();
+    }
+  };
+
+  const handleEditClick = (item) => {
+    setFormPplh(item);
+    setEditId(item._id);
+  };
+
+  const toggleSelectPplh = (id) => {
+    if (selectedPplhIds.includes(id)) {
+      setSelectedPplhIds(selectedPplhIds.filter(x => x !== id));
+    } else {
+      setSelectedPplhIds([...selectedPplhIds, id]);
+    }
+  };
 
   const copyLink = (token) => {
-    const link = `${window.location.origin}/lapor/${token}`;
-    navigator.clipboard.writeText(link);
-    alert("Link tersalin!");
-  };
-
-  const handleLogout = async () => {
-    await fetch('/api/auth/logout', { method: 'POST' });
-    window.location.href = '/'; 
-  };
-
-  // --- [2] FUNGSI HITUNG NILAI DINAMIS ---
-  // Menerima parameter 'kategori' untuk menentukan pembagi
-  const hitungNilai = (checklistArray, kategori) => {
-    if (!checklistArray || checklistArray.length === 0) return 0;
-    
-    // Tentukan Pembagi berdasarkan Kategori Target
-    const PEMBAGI = kategori === 'FASYANKES' ? TOTAL_SOAL_FASYANKES : TOTAL_SOAL_INDUSTRI;
-
-    let totalPoin = 0;
-    checklistArray.forEach(item => {
-      // Jika dijawab "Ada"
-      if (item.is_ada === true) {
-        // Logika Poin: Ada + Foto = 1 | Ada + No Foto = 0.5
-        if (item.bukti_foto && item.bukti_foto.length > 0) {
-          totalPoin += 1;   
-        } else {
-          totalPoin += 0.5; 
-        }
-      }
-    });
-    
-    // Rumus dengan Pembagi Dinamis
-    const nilai = Math.round((totalPoin / PEMBAGI) * 100);
-    return nilai > 100 ? 100 : nilai;
-  };
-
-  // --- [3] LOGIKA WARNA (Sesuai Gambar Kriteria) ---
-  const getStatusNilai = (nilai) => {
-    if (nilai >= 90) return { label: "SANGAT BAIK", style: "bg-green-100 text-green-700 border-green-200" };
-    if (nilai >= 70) return { label: "BAIK", style: "bg-cyan-100 text-cyan-700 border-cyan-200" };
-    if (nilai >= 50) return { label: "SEDANG", style: "bg-amber-100 text-amber-700 border-amber-200" };
-    if (nilai >= 25) return { label: "KURANG", style: "bg-red-100 text-red-700 border-red-200" };
-    return { label: "SANGAT KURANG", style: "bg-gray-800 text-white border-gray-600" };
+    const url = `${window.location.origin}/lapor/${token}`;
+    navigator.clipboard.writeText(url);
+    alert("Link tersalin: " + url);
   };
 
   return (
     <div 
-      className="min-h-screen bg-cover bg-center bg-no-repeat bg-fixed font-sans"
+      className="min-h-screen font-sans bg-cover bg-center bg-no-repeat bg-fixed"
       style={{ 
         backgroundImage: "url('/bg-pengawasan.webp')",
-        boxShadow: "inset 0 0 0 1000px rgba(245, 245, 245, 0.85)" 
+        boxShadow: "inset 0 0 0 2000px rgba(245, 245, 245, 0.9)" 
       }}
     >
-      <nav className="bg-green-800 text-white p-4 shadow-lg sticky top-0 z-50">
-        <div className="max-w-6xl mx-auto flex justify-between items-center">
-          <div className="flex items-center gap-2">
-            <h1 className="text-lg font-bold tracking-wide">Dashboard Admin LH</h1>
-          </div>
-          <button onClick={handleLogout} className="text-sm bg-green-900 px-3 py-1 rounded hover:bg-red-600 transition-colors">
-            Logout
-          </button>
-        </div>
-      </nav>
-
-      <div className="max-w-6xl mx-auto p-6 grid grid-cols-1 md:grid-cols-3 gap-8">
+      <div className="bg-green-800 text-white p-4 shadow-md flex justify-between items-center sticky top-0 z-20">
+        <h1 className="text-xl font-bold">Dashboard Admin LH</h1>
         
-        {/* FORM GENERATOR */}
-        <div className="md:col-span-1">
-          <div className="bg-white/90 backdrop-blur-sm p-6 rounded-xl shadow-lg border border-white/50 sticky top-24">
-            <h2 className="text-lg font-bold mb-1 text-gray-800">Buat Pengawasan</h2>
-            <form onSubmit={handleGenerate} className="space-y-5 mt-4">
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1">Nama Target</label>
+        {/* TOMBOL LOGOUT DENGAN FUNGSI */}
+        <button 
+          onClick={handleLogout}
+          className="bg-green-900 hover:bg-green-700 px-4 py-1 rounded text-sm font-bold transition-colors"
+        >
+          Logout
+        </button>
+      </div>
+
+      <div className="p-6 max-w-7xl mx-auto">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          
+          {/* KOLOM KIRI: FORM */}
+          <div className="md:col-span-1">
+            <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-200 sticky top-24">
+              <h2 className="text-lg font-bold mb-4 text-gray-800 border-b pb-2">Buat Pengawasan</h2>
+
+              <div className="mb-3">
+                <label className="block text-xs font-bold text-gray-700 mb-1">Nama Target</label>
                 <input 
-                  type="text" 
-                  value={namaUsaha}
-                  onChange={(e) => setNamaUsaha(e.target.value)}
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 bg-white text-gray-900"
+                  className="w-full bg-white text-gray-900 border border-gray-300 p-2.5 rounded-lg focus:ring-2 focus:ring-green-500 outline-none text-sm"
                   placeholder="Contoh: RSUD Gemolong"
-                  required
+                  value={namaTarget}
+                  onChange={e => setNamaTarget(e.target.value)}
                 />
               </div>
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Kategori</label>
-                <div className="grid grid-cols-2 gap-3">
-                  <button type="button" onClick={() => setTipeTarget('INDUSTRI')} className={`p-3 text-sm border rounded-lg font-bold flex flex-col items-center justify-center gap-1 transition-all ${tipeTarget === 'INDUSTRI' ? 'bg-blue-600 text-white border-blue-600 shadow-md' : 'bg-white text-gray-500 hover:bg-gray-50'}`}>
-                    <span>🏭</span> INDUSTRI
-                  </button>
-                  <button type="button" onClick={() => setTipeTarget('FASYANKES')} className={`p-3 text-sm border rounded-lg font-bold flex flex-col items-center justify-center gap-1 transition-all ${tipeTarget === 'FASYANKES' ? 'bg-teal-600 text-white border-teal-600 shadow-md' : 'bg-white text-gray-500 hover:bg-gray-50'}`}>
-                    <span>🏥</span> FASYANKES
-                  </button>
-                </div>
-              </div>
-              <button type="submit" disabled={loading} className="w-full bg-green-700 text-white py-3 rounded-lg hover:bg-green-800 font-bold shadow-lg transition-all">
-                {loading ? 'Menyimpan...' : '✨ Generate Token'}
-              </button>
-            </form>
-          </div>
-        </div>
 
-        {/* TABEL MONITORING */}
-        <div className="md:col-span-2">
-          <div className="bg-white/90 backdrop-blur-sm rounded-xl shadow-lg border border-white/50 overflow-hidden min-h-[500px]">
-            <div className="p-5 border-b border-gray-100 bg-white/50 flex justify-between items-center">
-              <h2 className="font-bold text-gray-800 text-lg">Daftar Pengawasan</h2>
-              <button onClick={fetchTokens} className="text-xs font-semibold text-green-700 bg-green-50 px-3 py-1.5 rounded-md hover:bg-green-100">
-                Refresh Data ⟳
+              <div className="mb-3">
+                <label className="block text-xs font-bold text-gray-700 mb-1">Tanggal Pengawasan</label>
+                <input 
+                  type="date"
+                  className="w-full bg-white text-gray-900 border border-gray-300 p-2.5 rounded-lg focus:ring-2 focus:ring-green-500 outline-none text-sm"
+                  value={tanggal}
+                  onChange={e => setTanggal(e.target.value)}
+                />
+              </div>
+
+              <div className="flex gap-2 mb-4">
+                <button onClick={() => setKategori("INDUSTRI")} className={`flex-1 py-2 rounded-lg font-bold border text-xs transition ${kategori==="INDUSTRI" ? "bg-blue-600 text-white border-blue-600" : "bg-white text-gray-500 border-gray-300"}`}>
+                  🏭 INDUSTRI
+                </button>
+                <button onClick={() => setKategori("FASYANKES")} className={`flex-1 py-2 rounded-lg font-bold border text-xs transition ${kategori==="FASYANKES" ? "bg-purple-600 text-white border-purple-600" : "bg-white text-gray-500 border-gray-300"}`}>
+                  🏥 FASYANKES
+                </button>
+              </div>
+
+              <div className="mb-4 bg-gray-50 p-3 rounded-lg border border-gray-200">
+                <div className="flex justify-between items-center mb-2">
+                  <label className="font-bold text-gray-700 text-xs">Tim PPLH:</label>
+                  <button onClick={() => setShowModal(true)} className="text-[10px] bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded-full font-bold transition">+ Kelola Data</button>
+                </div>
+                <div className="max-h-32 overflow-y-auto space-y-1 pr-1 custom-scroll">
+                  {listPplh.length === 0 ? <p className="text-[10px] text-gray-400 italic text-center">Belum ada data.</p> : 
+                    listPplh.map(p => (
+                      <label key={p._id} className={`flex items-center p-1.5 rounded border cursor-pointer transition ${selectedPplhIds.includes(p._id) ? "bg-green-100 border-green-500" : "bg-white border-gray-200"}`}>
+                        <input type="checkbox" className="w-3.5 h-3.5 text-green-600 mr-2 accent-green-600" checked={selectedPplhIds.includes(p._id)} onChange={() => toggleSelectPplh(p._id)} />
+                        <div className="truncate"><div className="font-bold text-xs text-gray-800">{p.nama}</div></div>
+                      </label>
+                    ))
+                  }
+                </div>
+                <p className="text-[10px] text-right mt-1 text-gray-500 font-bold">{selectedPplhIds.length} Dipilih</p>
+              </div>
+
+              <button onClick={handleGenerateToken} disabled={loading} className="w-full bg-green-700 hover:bg-green-800 text-white font-bold py-3 rounded-xl shadow-lg transition transform active:scale-95 disabled:opacity-50 text-sm">
+                {loading ? "Memproses..." : "✨ Generate Token"}
               </button>
             </div>
-            
-            <div className="overflow-x-auto">
-              <table className="min-w-full text-sm text-left">
-                <thead className="bg-gray-100/50 text-gray-500 uppercase font-semibold text-xs tracking-wider">
-                  <tr>
-                    <th className="px-6 py-4">Token</th>
-                    <th className="px-6 py-4">Target</th>
-                    <th className="px-6 py-4">Status</th>
-                    <th className="px-6 py-4 text-center">Kinerja</th>
-                    <th className="px-6 py-4 text-right">Aksi</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100">
-                  {tokens.map((item) => {
-                    // --- [4] PANGGIL FUNGSI DENGAN KATEGORI ---
-                    // Kita kirim 'item.kategori_target' agar fungsi tahu ini Industri atau Fasyankes
-                    const nilai = hitungNilai(item.checklist, item.kategori_target);
-                    const statusNilai = getStatusNilai(nilai);
+          </div>
 
-                    return (
-                      <tr key={item._id} className="hover:bg-white/80 transition-colors">
-                        <td className="px-6 py-4">
-                          <span className="font-mono font-bold text-green-700 bg-green-50 px-2 py-1 rounded border border-green-100 whitespace-nowrap">
-                            {item.token}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="font-bold text-gray-800">{item.profil?.nama_usaha || '-'}</div>
-                          <div className="text-xs text-gray-400 mt-0.5">
-                            {item.kategori_target === 'FASYANKES' ? '🏥 Fasyankes' : '🏭 Industri'}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <span className={`px-2 py-1 rounded-full text-xs font-bold ${
-                            item.status === 'SUBMITTED' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
-                          }`}>
-                            {item.status}
-                          </span>
-                        </td>
-                        
-                        {/* KOLOM KINERJA (MODIFIKASI: KOTAK PERSEGI) */}
-                        <td className="px-6 py-4">
-                          <div className="flex justify-center">
-                            {item.status === 'SUBMITTED' ? (
-                              // UBAH UKURAN DISINI: w-20 h-20 (80x80px) agar jadi KOTAK
-                              <div className={`w-20 h-20 flex flex-col items-center justify-center rounded-xl border-2 shadow-md transition-transform hover:scale-110 ${statusNilai.style}`}>
-                                
-                                {/* Angka Nilai (Diperbesar) */}
-                                <span className="text-3xl font-black leading-none tracking-tighter">
-                                  {nilai}
-                                </span>
-                                
-                                {/* Label Keterangan (Diperkecil & Wrap text) */}
-                                <span className="text-[8px] font-bold uppercase mt-1 text-center leading-3 px-1">
-                                  {statusNilai.label}
-                                </span>
-                                
-                              </div>
-                            ) : (
-                              // Placeholder untuk Draft (Kotak Abu-abu Kosong)
-                              <div className="w-20 h-20 flex items-center justify-center bg-gray-50 rounded-xl border-2 border-dashed border-gray-200">
-                                <span className="text-gray-300 text-3xl font-bold">-</span>
-                              </div>
-                            )}
-                          </div>
-                        </td>
+          {/* KOLOM KANAN: TABEL */}
+          <div className="md:col-span-2">
+            <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
+              <div className="p-5 border-b flex justify-between items-center bg-gray-50">
+                <h2 className="font-bold text-lg text-gray-800">Daftar Pengawasan</h2>
+                <button onClick={fetchLaporan} className="text-xs bg-white border border-gray-300 px-3 py-1 rounded hover:bg-gray-100 text-gray-600">🔄 Refresh Data</button>
+              </div>
 
-                        <td className="px-6 py-4 text-right flex justify-end gap-2">
-                          <button onClick={() => copyLink(item.token)} className="text-blue-600 hover:text-blue-800 border border-blue-200 px-2 py-1 rounded bg-blue-50 text-xs">
-                            Copy Link
-                          </button>
-                          {item.status === 'SUBMITTED' && (
-                            <TombolDownloadPDF token={item.token} />
-                          )}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                  {tokens.length === 0 && (
-                     <tr><td colSpan="5" className="text-center p-8 text-gray-400">Database masih kosong...</td></tr>
-                  )}
-                </tbody>
-              </table>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm text-left">
+                  <thead className="bg-gray-100 text-gray-600 uppercase text-xs font-bold">
+                    <tr>
+                      <th className="px-4 py-3">Token</th>
+                      <th className="px-4 py-3">Target</th>
+                      <th className="px-4 py-3 text-center">Status</th>
+                      <th className="px-4 py-3 text-center">Kinerja (Skor)</th>
+                      <th className="px-4 py-3 text-center">Aksi</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {loadingList ? (
+                      <tr><td colSpan="5" className="p-6 text-center text-gray-500">Memuat data...</td></tr>
+                    ) : laporanList.length === 0 ? (
+                      <tr><td colSpan="5" className="p-6 text-center text-gray-500 italic">Belum ada data pengawasan.</td></tr>
+                    ) : (
+                      laporanList.map((item) => {
+                        // HITUNG SKOR DISINI UNTUK SETIAP BARIS
+                        const { skor, label, colorClass } = hitungSkor(item);
+
+                        return (
+                          <tr key={item._id} className="hover:bg-gray-50 transition">
+                            <td className="px-4 py-3 font-mono font-bold text-green-700 bg-green-50 rounded w-max">{item.token}</td>
+                            <td className="px-4 py-3">
+                              <div className="font-bold text-gray-800">{item.profil?.nama_usaha || "-"}</div>
+                              <div className="text-xs text-gray-500">{item.kategori_target}</div>
+                            </td>
+                            <td className="px-4 py-3 text-center">
+                              <span className={`px-2 py-1 rounded text-[10px] font-bold ${item.status === 'SUBMITTED' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
+                                {item.status || 'DRAFT'}
+                              </span>
+                            </td>
+                            
+                            {/* KOLOM KINERJA REAL */}
+                            <td className="px-4 py-3 text-center">
+                              {item.status === 'SUBMITTED' ? (
+                                <div className={`inline-block border rounded px-2 py-1 text-center ${colorClass}`}>
+                                  <div className="text-lg font-bold leading-none">{skor}%</div>
+                                  <div className="text-[9px] uppercase font-bold">{label}</div>
+                                </div>
+                              ) : (
+                                <div className="text-xs text-gray-400 italic">Belum selesai</div>
+                              )}
+                            </td>
+
+                            <td className="px-4 py-3 text-center">
+                              <div className="flex items-center justify-center gap-2">
+                                <button onClick={() => copyLink(item.token)} className="text-xs border border-blue-200 text-blue-600 px-2 py-1 rounded hover:bg-blue-50 transition">Copy Link</button>
+                                {item.status === 'SUBMITTED' && (
+                                  <a href={`/api/admin/pdf?token=${item.token}`} target="_blank" className="text-xs bg-red-600 text-white px-2 py-1 rounded hover:bg-red-700 font-bold flex items-center gap-1">📄 PDF</a>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })
+                    )}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
         </div>
       </div>
+
+      {/* MODAL PPLH */}
+      {showModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[85vh] flex flex-col overflow-hidden">
+            <div className="p-5 border-b flex justify-between items-center bg-gray-50">
+              <h3 className="font-bold text-lg text-gray-800">📂 Kelola Database PPLH</h3>
+              <button onClick={() => setShowModal(false)} className="text-gray-400 hover:text-red-500 text-2xl font-bold">&times;</button>
+            </div>
+            <div className="flex-1 overflow-hidden flex flex-col md:flex-row">
+              <div className="w-full md:w-1/3 p-5 border-r bg-gray-50 overflow-y-auto">
+                <h4 className="font-bold text-blue-800 mb-4 text-sm uppercase tracking-wide border-b pb-2">{editId ? "✏️ Edit Petugas" : "➕ Tambah Baru"}</h4>
+                <form onSubmit={handleSimpanPplh} className="space-y-3">
+                  <input className="w-full bg-white text-gray-900 border p-2 rounded text-sm focus:border-blue-500 outline-none" placeholder="Nama" value={formPplh.nama} onChange={e=>setFormPplh({...formPplh, nama: e.target.value})} required />
+                  <input className="w-full bg-white text-gray-900 border p-2 rounded text-sm focus:border-blue-500 outline-none" placeholder="NIP" value={formPplh.nip} onChange={e=>setFormPplh({...formPplh, nip: e.target.value})} required />
+                  <input className="w-full bg-white text-gray-900 border p-2 rounded text-sm focus:border-blue-500 outline-none" placeholder="Pangkat" value={formPplh.pangkat} onChange={e=>setFormPplh({...formPplh, pangkat: e.target.value})} required />
+                  <input className="w-full bg-white text-gray-900 border p-2 rounded text-sm focus:border-blue-500 outline-none" placeholder="Jabatan" value={formPplh.jabatan} onChange={e=>setFormPplh({...formPplh, jabatan: e.target.value})} required />
+                  <input className="w-full bg-white text-gray-900 border p-2 rounded text-sm focus:border-blue-500 outline-none" placeholder="No HP" value={formPplh.no_telp} onChange={e=>setFormPplh({...formPplh, no_telp: e.target.value})} required />
+                  
+                  <div className="flex gap-2 pt-4">
+                    {editId && <button type="button" onClick={() => {setEditId(null); setFormPplh({nama:"", nip:"", pangkat:"", jabatan:"", no_telp:"", instansi:"DLH Kab. Sragen"})}} className="flex-1 bg-gray-200 py-2 rounded text-sm font-bold text-gray-700">Batal</button>}
+                    <button type="submit" className="flex-1 bg-blue-600 text-white py-2 rounded text-sm font-bold hover:bg-blue-700">Simpan</button>
+                  </div>
+                </form>
+              </div>
+              <div className="w-full md:w-2/3 p-0 overflow-y-auto bg-white">
+                <table className="w-full text-sm text-left">
+                  <thead className="bg-gray-100 text-gray-600 sticky top-0 z-10">
+                    <tr><th className="p-3 border-b">Nama / NIP</th><th className="p-3 border-b">Jabatan</th><th className="p-3 border-b text-center">Aksi</th></tr>
+                  </thead>
+                  <tbody className="divide-y">
+                    {listPplh.map(p => (
+                      <tr key={p._id} className="hover:bg-blue-50 transition group">
+                        <td className="p-3"><div className="font-bold text-gray-800">{p.nama}</div><div className="text-xs text-gray-500">{p.nip}</div></td>
+                        <td className="p-3 text-gray-600">{p.jabatan}</td>
+                        <td className="p-3 text-center"><button onClick={() => handleEditClick(p)} className="text-blue-600">✏️</button> <button onClick={() => handleHapusPplh(p._id)} className="text-red-600 ml-2">🗑️</button></td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
