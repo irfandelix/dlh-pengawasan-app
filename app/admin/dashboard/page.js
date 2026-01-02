@@ -27,22 +27,29 @@ export default function DashboardAdmin() {
   const [editId, setEditId] = useState(null);
 
   // =========================================
-  // 0. HELPER SORTING (PANGKAT TERTINGGI DI ATAS)
+  // 0. HELPER SORTING (KEPALA > PANGKAT > NAMA)
   // =========================================
   const sortPplh = (data) => {
     if (!data || !Array.isArray(data)) return [];
 
     return [...data].sort((a, b) => {
+      // --- LOGIKA 1: CEK JABATAN 'KEPALA' ---
+      // Kita anggap jabatan yang mengandung kata "kepala" adalah VIP (Top Tier)
+      const isKepalaA = (a.jabatan || "").toLowerCase().includes("kepala");
+      const isKepalaB = (b.jabatan || "").toLowerCase().includes("kepala");
+
+      // Jika A Kepala dan B bukan, A harus di atas (return -1)
+      if (isKepalaA && !isKepalaB) return -1;
+      // Jika B Kepala dan A bukan, B harus di atas (return 1)
+      if (!isKepalaA && isKepalaB) return 1;
+
+      // --- LOGIKA 2: SKOR PANGKAT (JIKA STATUS 'KEPALA' SAMA) ---
       const getScore = (pangkatStr) => {
-        // Cek jika null, undefined, atau strip (-)
         if (!pangkatStr || pangkatStr.trim() === '-' || pangkatStr.trim() === '') return 0;
         
-        // Regex Lebih Pintar: 
-        // Bisa baca "IV/a", "IV a", "IVa", "IV.a", "IV-a"
-        // Penjelasan: Cari Romawi (I-IV) -> boleh ada pemisah (spasi/slash/titik/strip) -> Cari Huruf (a-e)
+        // Regex Fleksibel: IV/a, IVa, IV a
         const match = pangkatStr.match(/\b(IV|III|II|I)(?:\s*[\/.-]?\s*)([a-e])\b/i);
-        
-        if (!match) return 0; // Jika tidak ada format golongan, skor 0 (paling bawah)
+        if (!match) return 0;
 
         const romans = { 'I': 1, 'II': 2, 'III': 3, 'IV': 4 };
         const letters = { 'a': 1, 'b': 2, 'c': 3, 'd': 4, 'e': 5 };
@@ -50,20 +57,18 @@ export default function DashboardAdmin() {
         const romawiScore = romans[match[1].toUpperCase()] || 0;
         const hurufScore = letters[match[2].toLowerCase()] || 0;
 
-        // Rumus Skor: Romawi * 10 + Huruf
-        // IV/a (41) > III/d (34) > III/a (31)
         return (romawiScore * 10) + hurufScore;
       };
 
       const scoreA = getScore(a.pangkat);
       const scoreB = getScore(b.pangkat);
 
-      // 1. PRIORITAS UTAMA: Bandingkan Skor Pangkat (DESCENDING / Besar ke Kecil)
+      // Bandingkan skor pangkat (Descending)
       if (scoreA !== scoreB) {
         return scoreB - scoreA;
       }
 
-      // 2. PRIORITAS KEDUA: Jika Pangkat Sama (atau sama-sama strip), Urutkan Nama (A-Z)
+      // --- LOGIKA 3: URUTKAN NAMA (TIE-BREAKER) ---
       const namaA = a.nama || "";
       const namaB = b.nama || "";
       return namaA.localeCompare(namaB);
