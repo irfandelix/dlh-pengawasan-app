@@ -33,7 +33,42 @@ const getIndoDate = (dateForDay, dateForTime) => {
   };
 };
 
-// --- DATA MASTER CHECKLIST (SAMA) ---
+// --- HELPER: SORTING JABATAN (PANGKAT/GOLONGAN) ---
+// Logika: Golongan IV > III > II > I. Huruf e > d > c > b > a.
+const sortTimPengawas = (tim) => {
+  if (!tim || !Array.isArray(tim)) return [];
+
+  return tim.sort((a, b) => {
+    const getScore = (pangkatStr) => {
+      if (!pangkatStr) return 0;
+      // Regex untuk menangkap (Romawi)/(Huruf) contoh: III/d atau IV/a
+      // \b(I|II|III|IV) menangkap romawi
+      // \/ menangkap garis miring
+      // ([a-e]) menangkap huruf
+      const match = pangkatStr.match(/\b(IV|III|II|I)\s*\/\s*([a-e])\b/i);
+      
+      if (!match) return 0;
+
+      const romans = { 'I': 1, 'II': 2, 'III': 3, 'IV': 4 };
+      const letters = { 'a': 1, 'b': 2, 'c': 3, 'd': 4, 'e': 5 };
+
+      const romawiScore = romans[match[1].toUpperCase()] || 0;
+      const hurufScore = letters[match[2].toLowerCase()] || 0;
+
+      // Skor Romawi dikali 10 agar jadi prioritas utama (40, 30, 20, 10)
+      // Ditambah skor huruf (1-5)
+      // Contoh: IV/a = 41, III/d = 34. Maka IV/a menang.
+      return (romawiScore * 10) + hurufScore;
+    };
+
+    const scoreA = getScore(a.pangkat);
+    const scoreB = getScore(b.pangkat);
+
+    return scoreB - scoreA; // Descending (Yang skornya besar di atas)
+  });
+};
+
+// --- DATA MASTER CHECKLIST ---
 const MASTER_CHECKLIST_INDUSTRI = [
   {
     kategori: "Dokumen Lingkungan",
@@ -191,7 +226,6 @@ const MASTER_CHECKLIST_FASYANKES = [
 
 // --- HELPER KHUSUS: AMBIL LOGO (LOKAL ATAU URL) ---
 async function getLogoBase64() {
-  // 1. Prioritas Utama: File Lokal di folder public
   try {
     const filename = 'Seal_of_Sragen_Regency.png';
     const filePath = path.join(process.cwd(), 'public', filename);
@@ -203,9 +237,8 @@ async function getLogoBase64() {
     console.error("Gagal baca logo lokal:", error);
   }
 
-  // 2. Fallback: Ambil dari Wikimedia (Jika file lokal gagal/tidak ada)
+  // Fallback ke Wikimedia jika lokal gagal
   try {
-    // URL Logo Sragen (Wikimedia PNG)
     const fallbackUrl = "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e3/Seal_of_Sragen_Regency.svg/238px-Seal_of_Sragen_Regency.svg.png";
     const res = await fetch(fallbackUrl);
     if (res.ok) {
@@ -268,7 +301,7 @@ export async function GET(request) {
     const waktuPembuatan = data.created_at || data.createdAt; 
     const timeInfo = getIndoDate(data.tanggal_pengawasan, waktuPembuatan); 
 
-    // --- 0. LOAD LOGO (ANTI GAGAL) ---
+    // --- 0. LOAD LOGO ---
     const logoBase64 = await getLogoBase64(); 
 
     // --- 1. PRE-PROCESS GAMBAR (SIPA, DIAGRAM) ---
@@ -300,7 +333,7 @@ export async function GET(request) {
        diagramBase64 = await urlToBase64(formatDriveImg(p.file_diagram));
     }
 
-    // --- 2. PRE-PROCESS PETA (GEOAPIFY API - DARI ENV) ---
+    // --- 2. PRE-PROCESS PETA (GEOAPIFY API) ---
     let mapBase64 = null;
     const GEOAPIFY_API_KEY = process.env.KEY_GEOAPIFY; 
     
@@ -308,7 +341,7 @@ export async function GET(request) {
        try {
          const [lat, lon] = p.koordinat.split(',').map(s => s.trim());
          if(lat && lon) {
-             const mapUrl = `https://maps.geoapify.com/v1/staticmap?style=osm-bright&width=600&height=300&center=lonlat:${lon},${lat}&zoom=17&marker=lonlat:${lon},${lat};color:%23ff0000;size:medium&apiKey=${GEOAPIFY_API_KEY}`;
+             const mapUrl = `https://maps.geoapify.com/v1/staticmap?style=osm-carto&width=600&height=300&center=lonlat:${lon},${lat}&zoom=17&marker=lonlat:${lon},${lat};color:%23ff0000;size:medium&apiKey=${GEOAPIFY_API_KEY}`;
              mapBase64 = await urlToBase64(mapUrl);
          }
        } catch (err) {
@@ -316,7 +349,11 @@ export async function GET(request) {
        }
     }
 
-    // --- 3. PRE-PROCESS BUKTI FOTO LAPANGAN ---
+    // --- 3. SORTING TIM PENGAWAS (PENTING!) ---
+    // Mengurutkan petugas berdasarkan Pangkat/Golongan Tertinggi
+    const timPengawas = sortTimPengawas(data.tim_pengawas || []);
+
+    // --- 4. PRE-PROCESS BUKTI FOTO ---
     const fotoChecklistMap = {};
     await Promise.all(data.checklist.map(async (item) => {
         if (item.bukti_foto && item.bukti_foto.length > 0) {
@@ -333,8 +370,6 @@ export async function GET(request) {
         return p[key1] || p[key2] || '';
     };
 
-    const timPengawas = data.tim_pengawas || [];
-
     // --- HTML CONTENT ---
     const htmlContent = `
     <!DOCTYPE html>
@@ -342,36 +377,29 @@ export async function GET(request) {
     <head>
       <title>Berita Acara</title>
       <style>
-        /* PAGE SETTING - MARGIN BAWAH KECIL */
         @page { size: A4; margin: 2cm 2cm 1cm 2cm; }
-        
         body { font-family: 'Times New Roman', serif; font-size: 11pt; color: #000; line-height: 1.2; }
         
-        /* HEADER KOP SURAT (DENGAN LOGO) */
         .kop-table { width: 100%; border-bottom: 3px solid black; margin-bottom: 20px; padding-bottom: 10px; }
         .kop-table td { border: none !important; vertical-align: middle; }
         .kop-logo-cell { width: 15%; text-align: center; }
         .kop-text-cell { width: 85%; text-align: center; }
-        
         .kop-title { font-size: 14pt; font-weight: bold; text-transform: uppercase; display: block; margin-bottom: 2px; }
         
         .ba-body { text-align: justify; line-height: 1.5; margin-bottom: 15px; }
         
-        /* STYLE HALAMAN 1 */
         .pplh-table { width: 100%; border: none; margin-bottom: 10px; }
         .pplh-table td { border: none !important; padding: 2px; vertical-align: top; }
         .pplh-label { width: 35%; }
         .pplh-sep { width: 2%; text-align: center; }
         .pplh-val { width: 63%; }
 
-        /* STYLE HALAMAN 2 (TTD PPLH) */
         .ttd-section { margin-top: 20px; width: 100%; }
         .ttd-item { margin-bottom: 25px; page-break-inside: avoid; }
         .ttd-table { width: 100%; border: none; }
         .ttd-table td { border: none !important; padding: 4px; vertical-align: top; }
         .ttd-line { border-bottom: 1px dashed #000; width: 250px; height: 30px; display: inline-block; }
 
-        /* --- STYLE KHUSUS FOOTER LAMPIRAN (NORMAL) --- */
         .lampiran-wrapper { width: 100%; border-collapse: collapse; border: none; }
         .lampiran-wrapper thead { display: table-header-group; }
         .lampiran-wrapper tfoot { display: table-footer-group; }
@@ -387,13 +415,8 @@ export async function GET(request) {
         }
         
         .footer-table { width: 100%; border: none; margin: 0; padding: 0; }
-        .footer-table td { 
-            border: none !important; 
-            padding: 2px 0; 
-            vertical-align: top;
-        }
+        .footer-table td { border: none !important; padding: 2px 0; vertical-align: top; }
 
-        /* STYLE STANDARD */
         .top-right-label { font-size: 10pt; margin-bottom: 20px; text-align: right; }
         .doc-title { text-align: center; margin-bottom: 5px; font-size: 12pt; font-weight: bold; }
         .doc-year { text-align: center; margin-bottom: 20px; font-size: 12pt; font-weight: bold; }
@@ -401,7 +424,6 @@ export async function GET(request) {
 
         .main-table { width: 100%; border: 2px solid #000; border-collapse: collapse; margin-bottom: 10px; }
         .main-table td { border: 1px solid #000 !important; padding: 4px; vertical-align: top; }
-        
         .nested-table { width: 100%; margin: 0; border: none; }
         .nested-table td { border: 1px solid #000 !important; text-align: center; font-size: 10pt; }
 
@@ -442,7 +464,7 @@ export async function GET(request) {
       </table>
 
       <div class="ba-body">
-        Pada hari ini <b>${timeInfo.hari}</b> tanggal <b>${timeInfo.tgl}</b> bulan <b>${timeInfo.bln}</b> tahun <b>${timeInfo.thn}</b> pukul <b>${timeInfo.pukul}</b> Waktu Indonesia Bagian Barat (WIB), telah dilakukan pengawasan terhadap <b>${val('nama_usaha') || '.......'}</b> dengan hasil sebagai berikut:
+        Pada hari ini <b>${timeInfo.hari}</b> tanggal <b>${timeInfo.tgl}</b> bulan <b>${timeInfo.bln}</b> tahun <b>${timeInfo.thn}</b> pukul <b>${timeInfo.pukul}</b> Waktu Indonesia Bagian Barat (WIB), telah dilakukan pengawasan terhadap PT <b>${val('nama_usaha') || '.......'}</b> dengan hasil sebagai berikut:
       </div>
 
       <div class="ba-body" style="font-weight: bold;">
@@ -515,7 +537,7 @@ export async function GET(request) {
                 
                 <tr><td class="col-label">Koordinat Lokasi</td><td class="col-sep">:</td><td class="col-val">${val('koordinat') || '-'}</td></tr>
                 <tr>
-                  <td class="col-label">Peta Lokasi (Peta Digital)</td>
+                  <td class="col-label">Peta Lokasi</td>
                   <td class="col-sep">:</td>
                   <td class="col-val">
                     ${mapBase64 ? 
