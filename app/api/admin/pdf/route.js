@@ -35,19 +35,20 @@ const getIndoDate = (dateForDay, dateForTime) => {
 
 // --- HELPER: SORTING JABATAN (PANGKAT/GOLONGAN) ---
 // Logika: Golongan IV > III > II > I. Huruf e > d > c > b > a.
+// Update: Menambahkan regex fleksibel (bisa IV/a, IVa, IV a) dan sorting nama sekunder
 const sortTimPengawas = (tim) => {
   if (!tim || !Array.isArray(tim)) return [];
 
-  return tim.sort((a, b) => {
+  return [...tim].sort((a, b) => {
     const getScore = (pangkatStr) => {
-      if (!pangkatStr) return 0;
-      // Regex untuk menangkap (Romawi)/(Huruf) contoh: III/d atau IV/a
-      // \b(I|II|III|IV) menangkap romawi
-      // \/ menangkap garis miring
-      // ([a-e]) menangkap huruf
-      const match = pangkatStr.match(/\b(IV|III|II|I)\s*\/\s*([a-e])\b/i);
+      // 1. Cek jika null, undefined, atau strip (-)
+      if (!pangkatStr || pangkatStr.trim() === '-' || pangkatStr.trim() === '') return 0;
+
+      // 2. Regex Fleksibel
+      // Bisa membaca: "IV/a", "IV a", "IV.a", "IV-a", atau "IVa"
+      const match = pangkatStr.match(/\b(IV|III|II|I)(?:\s*[\/.-]?\s*)([a-e])\b/i);
       
-      if (!match) return 0;
+      if (!match) return 0; // Jika format tidak dikenali, dianggap skor 0 (paling bawah)
 
       const romans = { 'I': 1, 'II': 2, 'III': 3, 'IV': 4 };
       const letters = { 'a': 1, 'b': 2, 'c': 3, 'd': 4, 'e': 5 };
@@ -55,16 +56,22 @@ const sortTimPengawas = (tim) => {
       const romawiScore = romans[match[1].toUpperCase()] || 0;
       const hurufScore = letters[match[2].toLowerCase()] || 0;
 
-      // Skor Romawi dikali 10 agar jadi prioritas utama (40, 30, 20, 10)
-      // Ditambah skor huruf (1-5)
-      // Contoh: IV/a = 41, III/d = 34. Maka IV/a menang.
+      // Skor Romawi (puluhan) + Huruf (satuan)
       return (romawiScore * 10) + hurufScore;
     };
 
     const scoreA = getScore(a.pangkat);
     const scoreB = getScore(b.pangkat);
 
-    return scoreB - scoreA; // Descending (Yang skornya besar di atas)
+    // PRIORITAS 1: Bandingkan Skor Pangkat (Descending / Besar ke Kecil)
+    if (scoreA !== scoreB) {
+      return scoreB - scoreA;
+    }
+
+    // PRIORITAS 2: Jika Skor Sama (atau sama-sama strip), urutkan Nama (A-Z)
+    const namaA = a.nama || "";
+    const namaB = b.nama || "";
+    return namaA.localeCompare(namaB);
   });
 };
 

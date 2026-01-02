@@ -34,9 +34,13 @@ export default function DashboardAdmin() {
 
     return [...data].sort((a, b) => {
       const getScore = (pangkatStr) => {
-        if (!pangkatStr) return 0;
-        // Regex deteksi Romawi (I-IV) dan Huruf (a-e). Contoh: "Pembina (IV/a)"
-        const match = pangkatStr.match(/\b(IV|III|II|I)\s*\/\s*([a-e])\b/i);
+        // Cek jika null, undefined, atau strip (-)
+        if (!pangkatStr || pangkatStr.trim() === '-' || pangkatStr.trim() === '') return 0;
+        
+        // Regex Lebih Pintar: 
+        // Bisa baca "IV/a", "IV a", "IVa", "IV.a", "IV-a"
+        // Penjelasan: Cari Romawi (I-IV) -> boleh ada pemisah (spasi/slash/titik/strip) -> Cari Huruf (a-e)
+        const match = pangkatStr.match(/\b(IV|III|II|I)(?:\s*[\/.-]?\s*)([a-e])\b/i);
         
         if (!match) return 0; // Jika tidak ada format golongan, skor 0 (paling bawah)
 
@@ -51,8 +55,18 @@ export default function DashboardAdmin() {
         return (romawiScore * 10) + hurufScore;
       };
 
-      // Descending (Score Besar di Atas)
-      return getScore(b.pangkat) - getScore(a.pangkat);
+      const scoreA = getScore(a.pangkat);
+      const scoreB = getScore(b.pangkat);
+
+      // 1. PRIORITAS UTAMA: Bandingkan Skor Pangkat (DESCENDING / Besar ke Kecil)
+      if (scoreA !== scoreB) {
+        return scoreB - scoreA;
+      }
+
+      // 2. PRIORITAS KEDUA: Jika Pangkat Sama (atau sama-sama strip), Urutkan Nama (A-Z)
+      const namaA = a.nama || "";
+      const namaB = b.nama || "";
+      return namaA.localeCompare(namaB);
     });
   };
 
