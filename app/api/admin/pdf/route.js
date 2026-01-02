@@ -469,7 +469,7 @@ export async function GET(request) {
       </table>
 
       <div class="ba-body">
-        Pada hari ini <b>${timeInfo.hari}</b> tanggal <b>${timeInfo.tgl}</b> bulan <b>${timeInfo.bln}</b> tahun <b>${timeInfo.thn}</b> pukul <b>${timeInfo.pukul}</b> Waktu Indonesia Bagian Barat (WIB), telah dilakukan pengawasan terhadap PT <b>${val('nama_usaha') || '.......'}</b> dengan hasil sebagai berikut:
+        Pada hari ini <b>${timeInfo.hari}</b> tanggal <b>${timeInfo.tgl}</b> bulan <b>${timeInfo.bln}</b> tahun <b>${timeInfo.thn}</b> pukul <b>${timeInfo.pukul}</b> Waktu Indonesia Bagian Barat (WIB), telah dilakukan pengawasan terhadap <b>${val('nama_usaha') || '.......'}</b> dengan hasil sebagai berikut:
       </div>
 
       <div class="ba-body" style="font-weight: bold;">
