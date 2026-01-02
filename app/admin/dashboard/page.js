@@ -1,9 +1,9 @@
 "use client";
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation"; // Import untuk navigasi (Logout)
+import { useRouter } from "next/navigation"; 
 
 export default function DashboardAdmin() {
-  const router = useRouter(); // Inisialisasi router
+  const router = useRouter(); 
 
   // --- STATE UTAMA ---
   const [namaTarget, setNamaTarget] = useState("");
@@ -27,13 +27,41 @@ export default function DashboardAdmin() {
   const [editId, setEditId] = useState(null);
 
   // =========================================
-  // 1. FUNGSI LOGOUT (BARU)
+  // 0. HELPER SORTING (PANGKAT TERTINGGI DI ATAS)
+  // =========================================
+  const sortPplh = (data) => {
+    if (!data || !Array.isArray(data)) return [];
+
+    return [...data].sort((a, b) => {
+      const getScore = (pangkatStr) => {
+        if (!pangkatStr) return 0;
+        // Regex deteksi Romawi (I-IV) dan Huruf (a-e). Contoh: "Pembina (IV/a)"
+        const match = pangkatStr.match(/\b(IV|III|II|I)\s*\/\s*([a-e])\b/i);
+        
+        if (!match) return 0; // Jika tidak ada format golongan, skor 0 (paling bawah)
+
+        const romans = { 'I': 1, 'II': 2, 'III': 3, 'IV': 4 };
+        const letters = { 'a': 1, 'b': 2, 'c': 3, 'd': 4, 'e': 5 };
+
+        const romawiScore = romans[match[1].toUpperCase()] || 0;
+        const hurufScore = letters[match[2].toLowerCase()] || 0;
+
+        // Rumus Skor: Romawi * 10 + Huruf
+        // IV/a (41) > III/d (34) > III/a (31)
+        return (romawiScore * 10) + hurufScore;
+      };
+
+      // Descending (Score Besar di Atas)
+      return getScore(b.pangkat) - getScore(a.pangkat);
+    });
+  };
+
+  // =========================================
+  // 1. FUNGSI LOGOUT
   // =========================================
   const handleLogout = () => {
     if (confirm("Apakah Anda yakin ingin keluar?")) {
-      // Di sini Anda bisa menambahkan logika hapus token/session jika ada
-      // localStorage.removeItem("token"); 
-      router.push("/"); // Kembali ke halaman utama/login
+      router.push("/"); 
     }
   };
 
@@ -44,7 +72,12 @@ export default function DashboardAdmin() {
   const fetchPplh = async () => {
     try {
       const res = await fetch("/api/admin/pplh");
-      if (res.ok) setListPplh(await res.json());
+      if (res.ok) {
+        const rawData = await res.json();
+        // 🔥 TERAPKAN SORTING DI SINI 🔥
+        const sortedData = sortPplh(rawData);
+        setListPplh(sortedData);
+      }
     } catch (err) {
       console.error("Gagal load PPLH:", err);
     }
@@ -71,7 +104,7 @@ export default function DashboardAdmin() {
   }, []);
 
   // =========================================
-  // 3. LOGIC HITUNG SKOR (REAL) 🧮
+  // 3. LOGIC HITUNG SKOR
   // =========================================
   const hitungSkor = (item) => {
     const TOTAL_SOAL = item.kategori_target === 'FASYANKES' ? 39 : 45;
@@ -113,7 +146,10 @@ export default function DashboardAdmin() {
     }
 
     setLoading(true);
-    const timTerpilih = listPplh.filter(p => selectedPplhIds.includes(p._id));
+    // Tim PPLH yang dikirim akan otomatis terurut karena listPplh sudah disortir
+    // Tapi kita sort ulang untuk memastikan urutan di database benar-benar rapi
+    const timTerpilihRaw = listPplh.filter(p => selectedPplhIds.includes(p._id));
+    const timTerpilihSorted = sortPplh(timTerpilihRaw);
 
     try {
       const res = await fetch("/api/admin/token", { 
@@ -123,7 +159,7 @@ export default function DashboardAdmin() {
           nama_target: namaTarget,
           kategori: kategori,
           tanggal_pengawasan: tanggal,
-          tim_pengawas: timTerpilih 
+          tim_pengawas: timTerpilihSorted 
         })
       });
       
@@ -197,7 +233,6 @@ export default function DashboardAdmin() {
       <div className="bg-green-800 text-white p-4 shadow-md flex justify-between items-center sticky top-0 z-20">
         <h1 className="text-xl font-bold">Dashboard Admin LH</h1>
         
-        {/* TOMBOL LOGOUT DENGAN FUNGSI */}
         <button 
           onClick={handleLogout}
           className="bg-green-900 hover:bg-green-700 px-4 py-1 rounded text-sm font-bold transition-colors"
@@ -253,7 +288,11 @@ export default function DashboardAdmin() {
                     listPplh.map(p => (
                       <label key={p._id} className={`flex items-center p-1.5 rounded border cursor-pointer transition ${selectedPplhIds.includes(p._id) ? "bg-green-100 border-green-500" : "bg-white border-gray-200"}`}>
                         <input type="checkbox" className="w-3.5 h-3.5 text-green-600 mr-2 accent-green-600" checked={selectedPplhIds.includes(p._id)} onChange={() => toggleSelectPplh(p._id)} />
-                        <div className="truncate"><div className="font-bold text-xs text-gray-800">{p.nama}</div></div>
+                        <div className="truncate">
+                          <div className="font-bold text-xs text-gray-800">{p.nama}</div>
+                          {/* Menampilkan Pangkat agar user yakin urutannya benar */}
+                          <div className="text-[10px] text-gray-500">{p.pangkat}</div>
+                        </div>
                       </label>
                     ))
                   }
@@ -293,7 +332,6 @@ export default function DashboardAdmin() {
                       <tr><td colSpan="5" className="p-6 text-center text-gray-500 italic">Belum ada data pengawasan.</td></tr>
                     ) : (
                       laporanList.map((item) => {
-                        // HITUNG SKOR DISINI UNTUK SETIAP BARIS
                         const { skor, label, colorClass } = hitungSkor(item);
 
                         return (
@@ -308,8 +346,6 @@ export default function DashboardAdmin() {
                                 {item.status || 'DRAFT'}
                               </span>
                             </td>
-                            
-                            {/* KOLOM KINERJA REAL */}
                             <td className="px-4 py-3 text-center">
                               {item.status === 'SUBMITTED' ? (
                                 <div className={`inline-block border rounded px-2 py-1 text-center ${colorClass}`}>
@@ -320,7 +356,6 @@ export default function DashboardAdmin() {
                                 <div className="text-xs text-gray-400 italic">Belum selesai</div>
                               )}
                             </td>
-
                             <td className="px-4 py-3 text-center">
                               <div className="flex items-center justify-center gap-2">
                                 <button onClick={() => copyLink(item.token)} className="text-xs border border-blue-200 text-blue-600 px-2 py-1 rounded hover:bg-blue-50 transition">Copy Link</button>
@@ -355,7 +390,10 @@ export default function DashboardAdmin() {
                 <form onSubmit={handleSimpanPplh} className="space-y-3">
                   <input className="w-full bg-white text-gray-900 border p-2 rounded text-sm focus:border-blue-500 outline-none" placeholder="Nama" value={formPplh.nama} onChange={e=>setFormPplh({...formPplh, nama: e.target.value})} required />
                   <input className="w-full bg-white text-gray-900 border p-2 rounded text-sm focus:border-blue-500 outline-none" placeholder="NIP" value={formPplh.nip} onChange={e=>setFormPplh({...formPplh, nip: e.target.value})} required />
-                  <input className="w-full bg-white text-gray-900 border p-2 rounded text-sm focus:border-blue-500 outline-none" placeholder="Pangkat" value={formPplh.pangkat} onChange={e=>setFormPplh({...formPplh, pangkat: e.target.value})} required />
+                  
+                  {/* INPUT PANGKAT PENTING UNTUK SORTING */}
+                  <input className="w-full bg-white text-gray-900 border p-2 rounded text-sm focus:border-blue-500 outline-none" placeholder="Pangkat (Contoh: Pembina (IV/a))" value={formPplh.pangkat} onChange={e=>setFormPplh({...formPplh, pangkat: e.target.value})} required />
+                  
                   <input className="w-full bg-white text-gray-900 border p-2 rounded text-sm focus:border-blue-500 outline-none" placeholder="Jabatan" value={formPplh.jabatan} onChange={e=>setFormPplh({...formPplh, jabatan: e.target.value})} required />
                   <input className="w-full bg-white text-gray-900 border p-2 rounded text-sm focus:border-blue-500 outline-none" placeholder="No HP" value={formPplh.no_telp} onChange={e=>setFormPplh({...formPplh, no_telp: e.target.value})} required />
                   
@@ -368,14 +406,27 @@ export default function DashboardAdmin() {
               <div className="w-full md:w-2/3 p-0 overflow-y-auto bg-white">
                 <table className="w-full text-sm text-left">
                   <thead className="bg-gray-100 text-gray-600 sticky top-0 z-10">
-                    <tr><th className="p-3 border-b">Nama / NIP</th><th className="p-3 border-b">Jabatan</th><th className="p-3 border-b text-center">Aksi</th></tr>
+                    <tr>
+                      <th className="p-3 border-b">Nama / NIP</th>
+                      <th className="p-3 border-b">Pangkat & Jabatan</th>
+                      <th className="p-3 border-b text-center">Aksi</th>
+                    </tr>
                   </thead>
                   <tbody className="divide-y">
                     {listPplh.map(p => (
                       <tr key={p._id} className="hover:bg-blue-50 transition group">
-                        <td className="p-3"><div className="font-bold text-gray-800">{p.nama}</div><div className="text-xs text-gray-500">{p.nip}</div></td>
-                        <td className="p-3 text-gray-600">{p.jabatan}</td>
-                        <td className="p-3 text-center"><button onClick={() => handleEditClick(p)} className="text-blue-600">✏️</button> <button onClick={() => handleHapusPplh(p._id)} className="text-red-600 ml-2">🗑️</button></td>
+                        <td className="p-3">
+                          <div className="font-bold text-gray-800">{p.nama}</div>
+                          <div className="text-xs text-gray-500">{p.nip}</div>
+                        </td>
+                        <td className="p-3">
+                          <div className="text-xs font-bold text-blue-700">{p.pangkat}</div>
+                          <div className="text-gray-600">{p.jabatan}</div>
+                        </td>
+                        <td className="p-3 text-center">
+                          <button onClick={() => handleEditClick(p)} className="text-blue-600">✏️</button> 
+                          <button onClick={() => handleHapusPplh(p._id)} className="text-red-600 ml-2">🗑️</button>
+                        </td>
                       </tr>
                     ))}
                   </tbody>
