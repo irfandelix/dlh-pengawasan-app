@@ -546,7 +546,7 @@ export async function GET(request) {
                   <td class="col-sep">:</td>
                   <td class="col-val">
                     ${mapBase64 ? 
-                      `<img src="${mapBase64}" style="width: 75%; max-height: 250px; object-fit: cover; border: 1px solid #ccc; margin-top: 5px;" />` 
+                      `<img src="${mapBase64}" style="width: 50%; max-height: 250px; object-fit: cover; border: 1px solid #ccc; margin-top: 5px;" />` 
                       : 
                       '(Peta tidak tersedia. Pastikan koordinat terisi dan API Key valid)'
                     }
