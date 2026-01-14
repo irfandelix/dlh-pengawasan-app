@@ -573,6 +573,8 @@ export async function GET(request) {
                 <tr><td class="col-label">Jam Shift Kerja/Hari</td><td class="col-sep">:</td><td class="col-val">${val('shift_kerja')} (shift kerja)</td></tr>
               </table>
 
+              <div style="page-break-before: always;"></div>
+
               <table class="main-table" style="margin-top: 20px;">
                 ${isFasyankes ? `
                 <tr><td class="col-label">Jumlah Tempat Tidur</td><td class="col-sep">:</td><td class="col-val">${val('jumlah_tempat_tidur')}</td></tr>

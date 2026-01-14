@@ -4,7 +4,7 @@ import mongoose from 'mongoose';
 const LaporanSchema = new mongoose.Schema({
   token: { type: String, required: true, unique: true, index: true },
   
-  // BAGIAN A: Tim Pengawas (Bisa lebih dari 1 orang)
+  // --- HEADER & TIM ---
   tanggal_pengawasan: { type: Date, required: true },
   tim_pengawas: [{
     nama: String,
@@ -15,116 +15,136 @@ const LaporanSchema = new mongoose.Schema({
     instansi: String
   }],
   
-  // --- TAMBAHAN BARU ---
   kategori_target: {
     type: String,
-    enum: ['INDUSTRI', 'FASYANKES'], // Pembeda Utama
+    enum: ['INDUSTRI', 'FASYANKES'], 
     default: 'INDUSTRI'
   },
-  
-  // Lingkup kita buat default SELALU LENGKAP (A-E)
-  lingkup: {
-    type: [String], 
-    default: ["A", "B", "C", "D", "E"] 
-  }, 
 
   status: { type: String, enum: ['DRAFT', 'SUBMITTED'], default: 'DRAFT' },
 
-  // --- BAGIAN I: PROFIL USAHA (Sesuai PDF Hal 1-2) ---
+  // --- BAGIAN I: PROFIL USAHA (HARUS SAMA PERSIS DENGAN KODE PDF) ---
   profil: {
     nama_usaha: String,
-    jenis_kegiatan: String,
+    alamat_usaha: String, // Di PDF p.alamat_usaha
+    bidang_usaha: String,
     telepon: String,
-    // 🔥 WAJIB TAMBAHKAN BARIS INI 🔥
     koordinat: String, 
-    // -------------------------------
-    lokasi_usaha: String,
-    holding_company: String,
-    tahun_operasi: String,
-    status_permodalan: String, // PMA/PMDN
     
-    // Luas & Fisik
-    luas_area_m2: Number,
-    luas_bangunan_m2: Number,
+    // --- Data Baru untuk PDF ---
+    nib: String,
+    kbli: String,
+    penanggung_jawab: String,
+    jabatan_pj: String,
+    tahun_operasi: String,
+    status_permodalan: String,
+    
+    // Fisik
+    luas_lahan: String,     // Di PDF p.luas_lahan
+    luas_bangunan: String,  // Di PDF p.luas_bangunan
     
     // Operasional Air
     lokasi_buang_limbah: String,
-    pemanfaatan_air_limbah: String,
-    no_izin_sipa: String, // Input Text
-    file_sipa: String,    // URL Upload
+    pemanfaatan_air: String, // Sesuai PDF (bukan pemanfaatan_air_limbah)
+    no_sipa: String,         // Sesuai PDF (bukan no_izin_sipa)
+    file_sipa: String,    
     
-    // ============================================
-    // ▼▼▼ TAMBAHAN KHUSUS FASYANKES (BARU) ▼▼▼
-    // ============================================
-    jumlah_tempat_tidur: String,      // Input Angka/Text
-    file_diagram: String,             // URL Upload Diagram Alir
-    media_pembuangan_air: String,     // Input Text
-    // ============================================
+    // Khusus Fasyankes
+    jumlah_tempat_tidur: String,
+    file_diagram: String,
+    media_pembuangan_air: String,
 
-    // Produksi
-    debit_air_harian: Number, // m3/hari
-    jam_produksi_hari: Number,
-    hari_kerja_minggu: Number,
-    hari_kerja_tahun: Number,
-    jumlah_karyawan: Number,
-    shift_kerja: Number,
+    // Produksi & Operasional
+    penggunaan_air: String,    // Sesuai PDF (bukan debit_air_harian)
+    jam_produksi: String,      // Sesuai PDF
+    hari_kerja_minggu: String,
+    hari_kerja_tahun: String,
+    jumlah_karyawan: String,
+    shift_kerja: String,
     
-    // Kapasitas (Array karena ada 3 kolom di PDF: Terpasang, Izin, Riil)
-    kapasitas_produksi: {
-      terpasang: String,
-      sesuai_izin: String,
-      riil: String
-    },
+    // --- KAPASITAS PRODUKSI (FLAT AGAR MUDAH DI PDF) ---
+    // Jangan pakai object nested { terpasang: ... } agar cocok dengan route.js
+    kapasitas_terpasang: String,
+    kapasitas_izin: String,
+    kapasitas_riil: String,
 
     // Bahan & Proses
     bahan_baku_utama: String,
     bahan_baku_penolong: String,
-    proses_produksi: String, // Deskripsi
-    persen_export: Number,
-    persen_domestik: Number,
+    proses_produksi: String,
+    
+    // Pemasaran (Nama variabel disesuaikan dengan PDF)
+    pemasaran_export: String,   // Sesuai PDF (bukan persen_export)
+    pemasaran_domestik: String, // Sesuai PDF (bukan persen_domestik)
+    merek_dagang: String,       // Baru
 
-    // Energi & Manajemen (PDF Hal 2)
-    bahan_bakar: String, // Jenis
+    // Energi
+    bahan_bakar: String,
     satuan_bahan_bakar: String,
-    konsumsi_bb_tahun: Number,
-    sistem_manajemen_lingkungan: String, // Ada/Tidak/Sebutkan
-    dokumen_lingkungan: String, // AMDAL/UKL-UPL
-    tgl_inspeksi_terakhir: Date,
-    ruang_terbuka_hijau_persen: Number
+    konsumsi_bb: String,        // Sesuai PDF (bukan konsumsi_bb_tahun)
+    
+    // Manajemen
+    sistem_manajemen: String,   // Sesuai PDF (bukan sistem_manajemen_lingkungan)
+    dokumen_lingkungan: String,
+    inspeksi_terakhir: String,  // Sesuai PDF (bukan tgl_inspeksi_terakhir)
+    rth_persen: String          // Sesuai PDF
   },
 
-  // --- BAGIAN II: CHECKLIST TEMUAN (Sesuai Tabel PDF Hal 3-5) ---
-  // Disimpan dalam bentuk Array agar dinamis
-  checklist: [
+  // --- BAGIAN II: FAKTA ADMINISTRATIF (BARU) ---
+  fakta_administratif: [
     {
-      kategori: String,     // Misal: "Pencemaran Air"
-      pertanyaan: String,   // Misal: "Kondisi Fisik IPAL"
-      is_ada: Boolean,      // Kolom "Ada/Tidak" atau "Sesuai/Tidak"
-      keterangan: String,   // Kolom Keterangan
-      bukti_foto: [String]  // URL Foto (Array, jaga-jaga kalau fotonya > 1)
+      nomor: String,
+      judul: String,
+      tanggal: String
     }
   ],
 
-  // --- BAGIAN III: HASIL UJI (Khusus Tabel Hal 3 Bawah) ---
-  uji_udara: {
-    no_param: Number,
-    co2: Number,
-    co: Number,
-    o2: Number,
-    humidity: Number,
-    dew_point: Number,
-    temperatur: Number
+  // --- BAGIAN III: FAKTA LAPANGAN (BARU) ---
+  fakta_lapangan: { type: String },
+
+  // --- BAGIAN IV: ASPEK TEKNIS (BARU) ---
+  aspek_teknis: {
+    air_limbah: {
+      sumber: String,
+      status_izin: String,
+      ketaatan_mutu: String,
+      ketaatan_teknis: String,
+      info_umum: String,
+      dokumentasi: [String]
+    },
+    limbah_b3: {
+      sumber: String,
+      status_izin: String,
+      ketaatan_mutu: String,
+      ketaatan_teknis: String,
+      info_umum: String,
+      dokumentasi: [String]
+    },
+    udara_emisi: {
+      is_ada: { type: Boolean, default: false },
+      sumber: String,
+      status_izin: String,
+      ketaatan_mutu: String,
+      ketaatan_teknis: String,
+      info_umum: String,
+      dokumentasi: [String]
+    }
   },
+
+  // --- LAMPIRAN CHECKLIST (LAMA) ---
+  checklist: [
+    {
+      kategori: String,
+      pertanyaan: String,
+      is_ada: Boolean,
+      keterangan: String,
+      bukti_foto: [String]
+    }
+  ],
 
   // Metadata
   created_at: { type: Date, default: Date.now },
-  updated_at: { type: Date, default: Date.now },
-  waktu_submit: Date,
-  koordinat_submit: {
-    lat: Number,
-    lng: Number
-  }
+  updated_at: { type: Date, default: Date.now }
 });
 
-// Cek if model already exists to prevent overwrite error in Next.js hot reload
 export default mongoose.models.Laporan || mongoose.model('Laporan', LaporanSchema);
