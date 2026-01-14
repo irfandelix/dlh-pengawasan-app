@@ -572,11 +572,11 @@ export async function GET(request) {
                 <tr><td class="col-label">Jumlah Karyawan</td><td class="col-sep">:</td><td class="col-val">${val('jumlah_karyawan')} (Orang)</td></tr>
                 <tr><td class="col-label">Jam Shift Kerja/Hari</td><td class="col-sep">:</td><td class="col-val">${val('shift_kerja')} (shift kerja)</td></tr>
                 
+                <div style="page-break-before: always;"></div>
+
                 ${isFasyankes ? `
                 <tr><td class="col-label">Jumlah Tempat Tidur</td><td class="col-sep">:</td><td class="col-val">${val('jumlah_tempat_tidur')}</td></tr>
                 ` : ''}
-
-                <div style="page-break-before: always;"></div>
 
                 ${!isFasyankes ? `
                 <tr>
