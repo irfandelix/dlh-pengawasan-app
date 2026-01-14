@@ -571,9 +571,9 @@ export async function GET(request) {
                 <tr><td class="col-label">Jumlah Hari Kerja / Tahun</td><td class="col-sep">:</td><td class="col-val">${val('hari_kerja_tahun')} (Hari)</td></tr>
                 <tr><td class="col-label">Jumlah Karyawan</td><td class="col-sep">:</td><td class="col-val">${val('jumlah_karyawan')} (Orang)</td></tr>
                 <tr><td class="col-label">Jam Shift Kerja/Hari</td><td class="col-sep">:</td><td class="col-val">${val('shift_kerja')} (shift kerja)</td></tr>
-                
-                <div style="page-break: always;"></div>
+              </table>
 
+              <table class="main-table" style="margin-top: 20px;">
                 ${isFasyankes ? `
                 <tr><td class="col-label">Jumlah Tempat Tidur</td><td class="col-sep">:</td><td class="col-val">${val('jumlah_tempat_tidur')}</td></tr>
                 ` : ''}
@@ -598,9 +598,7 @@ export async function GET(request) {
                 <tr><td class="col-label">Proses Produksi</td><td class="col-sep">:</td><td class="col-val">${val('proses_produksi')}</td></tr>
                 <tr><td class="col-label">Prosentase Pemasaran Export</td><td class="col-sep">:</td><td class="col-val">${val('pemasaran_export')} %</td></tr>
                 ` : ''}
-              </table>
 
-              <table class="main-table" style="margin-top: 20px;">
                 ${!isFasyankes ? `
                 <tr><td class="col-label">Prosentase Pemasaran Domestik</td><td class="col-sep">:</td><td class="col-val">${val('pemasaran_domestik')} %</td></tr>
                 <tr><td class="col-label">Merek Dagang</td><td class="col-sep">:</td><td class="col-val">${val('merek_dagang')}</td></tr>
