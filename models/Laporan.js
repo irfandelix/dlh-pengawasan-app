@@ -26,21 +26,16 @@ const LaporanSchema = new mongoose.Schema({
   // --- BAGIAN I: PROFIL USAHA (HARUS SAMA PERSIS DENGAN KODE PDF) ---
   profil: {
     nama_usaha: String,
-    alamat_usaha: String, // Di PDF p.alamat_usaha
-    bidang_usaha: String,
+    jenis_kegiatan: String,
     telepon: String,
-    koordinat: String, 
-    
-    // --- Data Baru untuk PDF ---
-    nib: String,
-    kbli: String,
-    penanggung_jawab: String,
-    jabatan_pj: String,
+    koordinat: String,
+    lokasi_usaha: String,
+    holding_company: String,
     tahun_operasi: String,
-    status_permodalan: String,
-    
+    status_permodalan: String, // PMA/PMDN 
+      
     // Fisik
-    luas_lahan: String,     // Di PDF p.luas_lahan
+    luas_area: String,     // Di PDF p.luas_lahan
     luas_bangunan: String,  // Di PDF p.luas_bangunan
     
     // Operasional Air
