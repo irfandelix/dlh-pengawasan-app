@@ -538,7 +538,7 @@ export async function GET(request) {
                 <tr><td class="col-label">Nama Jenis Usaha dan/atau Kegiatan</td><td class="col-sep">:</td><td class="col-val">${val('nama_usaha')}</td></tr>
                 <tr><td class="col-label">Jenis Usaha dan/atau Kegiatan</td><td class="col-sep">:</td><td class="col-val">${data.kategori_target || ''}</td></tr>
                 <tr><td class="col-label">Telepon/Fax</td><td class="col-sep">:</td><td class="col-val">${val('telepon')}</td></tr>
-                <tr><td class="col-label">Lokasi Usaha dan/atau Kegiatan</td><td class="col-sep">:</td><td class="col-val">${val('alamat_usaha')}</td></tr>
+                <tr><td class="col-label">Lokasi Usaha dan/atau Kegiatan</td><td class="col-sep">:</td><td class="col-val">${p.alamat_usaha}</td></tr>
                 
                 <tr><td class="col-label">Koordinat Lokasi</td><td class="col-sep">:</td><td class="col-val">${val('koordinat') || '-'}</td></tr>
                 <tr>
